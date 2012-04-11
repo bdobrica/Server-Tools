@@ -1,0 +1,64 @@
+#!/usr/bin/php
+<?php
+define ('FILES_HASH_ECHO' , TRUE);
+#define ('FILES_HASH_BUILD', TRUE);
+define ('FILES_HASH_CHECK', TRUE);
+
+$_db_name = "";
+$_db_user = "";
+$_db_pass = "";
+
+$stamp = time ();
+
+$db = mysql_connect("localhost", $_db_user , $_db_pass);
+if (!@mysql_select_db($_db_name, $db)) { header ('Location: /error/db_connect.html'); exit (1); }
+function q ( $query ) { global $_tum; global $db; $s = microtime(); $res = @mysql_query($query,$db); $_tum += (microtime()-$s); if ($res) return $res; /*header ('Location: /error/db_select.html'); exit(1);*/ }
+function f ( $result ) { if (!$result) return 0; if ($a = mysql_fetch_array($result)) return $a; else return array(); }
+function a ( $query ) { return f(q($query)); }
+function o ( $query ) { list ($r,) = f(q($query)); return $r; }
+function r ( $str ) { global $db; return mysql_real_escape_string ($str,$db); }
+
+function out ($str) {
+	if (defined('FILES_HASH_ECHO')) echo "$str\n";
+	}
+
+function file_hash ($filename) {
+	global $stamp;
+
+	if (!preg_match('/.*\.php$/', $filename)) return;
+	if (defined('FILES_HASH_BUILD')) {
+		$pathhash = md5 ($filename);
+		$conthash = md5_file ($filename);
+		q ("insert into `files` (path,pathhash,conthash,stamp) values ('".r($filename)."','$pathhash','$conthash','$stamp');");
+		}
+	if (defined('FILES_HASH_CHECK')) {
+		$pathhash = md5 ($filename);
+		$realhash = md5_file ($filename);
+		$conthash = o ("select conthash from `files` where pathhash='$pathhash';");
+		if ($realhash != $conthash)
+			out (date('Y-m-d H:i:s')."\t".$filename);
+		}
+	}
+
+function scan_dir ($dirname) {
+	$dirname = rtrim($dirname, '/');
+	$dir = opendir ($dirname);
+	$out = array ();
+	if (!$dir) return array ();
+	while (($file = readdir($dir)) !== FALSE) {
+		if ($file == '.' || $file == '..') continue;
+		if (!is_dir($dirname . '/' . $file)) file_hash ($dirname . '/' . $file);
+		else
+			$out[] = $dirname . '/' . $file;
+		}
+	return $out;
+	}
+
+$dirs = array (dirname(__FILE__));
+
+while (!empty($dirs)) {
+	$dirname = array_pop ($dirs);
+	$others = scan_dir ($dirname);
+	if (!empty($others)) $dirs = array_merge ($dirs, $others);
+	}
+?>

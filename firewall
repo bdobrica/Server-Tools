@@ -1,0 +1,19 @@
+#!/bin/bash
+echo 1 > /proc/sys/net/ipv4/tcp_syncookies
+my=`ifconfig | grep -e '[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+' | grep Bcast | awk '{print $2;}' | awk -F ':' '{print $2;}'`;
+
+iptables -F
+iptables -X
+
+iptables -A INPUT -p tcp ! --syn -m state --state NEW -j DROP
+iptables -A INPUT -f -j DROP
+iptables -A INPUT -p tcp --tcp-flags ALL ALL -j DROP
+iptables -A INPUT -p tcp --tcp-flags ALL NONE -j DROP
+
+#iptables -A OUTPUT -o eth0 -p tcp --sport 513:65535 --dport 53 -j ACCEPT
+iptables -A OUTPUT -o eth0 -p tcp --sport 513:65535 --dport 25 -j ACCEPT
+iptables -A OUTPUT -o eth0 -p tcp --sport 513:65535 --dport 80 -j ACCEPT
+iptables -A OUTPUT -o eth0 -p tcp --sport 513:65535 -j DROP
+
+iptables -A INPUT -p icmp --icmp-type 8 -j DROP
+iptables -A OUTPUT -p icmp --icmp-type 8 -j DROP

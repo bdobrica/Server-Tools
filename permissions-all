@@ -1,0 +1,54 @@
+#!/bin/bash
+
+eerror () {
+        echo -e " \033[0;31m*\033[00m" $1;
+        }
+ebegin () {
+        echo -e " \033[1;32m*\033[00m" $1;
+        }
+einfo () {
+        echo -e " \033[0;35m*\033[00m" $1;
+        }
+eend () {
+        if [[ $1 -eq 0 ]]; then
+                echo -e -n "\033[s\033[1A\033[$((COLUMNS-6))C[\033[1;32mok\033[00m]\033[u";
+        else
+                echo -e -n "\033[s\033[1A\033[$((COLUMNS-6))C[\033[0;31m!!\033[00m]\033[u";
+                exit 1;
+        fi
+        }
+
+ls | while read i
+do
+	if [ -d /mnt/www/$i/$i/wp-admin ]
+	then
+		cd /mnt/www/$i/$i/wp-includes
+		for i in *; do if [ -d $i ]; then chmod 0555 $i; else chmod 0444 $i; fi; done
+		cd /mnt/www/$i/$i/wp-includes/js
+		for i in *; do if [ -d $i ]; then chmod 0555 $i; else chmod 0444 $i; fi; done
+		cd /mnt/www/$i/$i/wp-includes/js/crop
+		for i in *; do if [ -d $i ]; then chmod 0555 $i; else chmod 0444 $i; fi; done
+		cd /mnt/www/$i/$i/wp-includes/js/imgareaselect
+		for i in *; do if [ -d $i ]; then chmod 0555 $i; else chmod 0444 $i; fi; done
+		cd /mnt/www/$i/$i/wp-includes/js/jcrop
+		for i in *; do if [ -d $i ]; then chmod 0555 $i; else chmod 0444 $i; fi; done
+		cd /mnt/www/$i/$i/wp-includes/js/jquery
+		for i in *; do if [ -d $i ]; then chmod 0555 $i; else chmod 0444 $i; fi; done
+		cd /mnt/www/$i/$i/wp-includes/js/scriptaculous
+		for i in *; do if [ -d $i ]; then chmod 0555 $i; else chmod 0444 $i; fi; done
+		cd /mnt/www/$i/$i/wp-includes/js/swfupload
+		for i in *; do if [ -d $i ]; then chmod 0555 $i; else chmod 0444 $i; fi; done
+		cd /mnt/www/$i/$i/wp-includes/js/swfupload/plugins
+		for i in *; do if [ -d $i ]; then chmod 0555 $i; else chmod 0444 $i; fi; done
+		cd /mnt/www/$i/$i/wp-includes/js/thickbox
+		for i in *; do if [ -d $i ]; then chmod 0555 $i; else chmod 0444 $i; fi; done
+		cd /mnt/www/$i/$i/wp-includes/js/tinymce
+		for i in *; do if [ -d $i ]; then chmod 0555 $i; else chmod 0444 $i; fi; done
+		cd /mnt/www/$i/$i/wp-includes/js/tinymce/plugins
+		for i in *; do if [ -d $i ]; then chmod 0555 $i; else chmod 0444 $i; fi; done
+		cd /mnt/www/$i/$i/wp-includes/js/tinymce/utils
+		for i in *; do if [ -d $i ]; then chmod 0555 $i; else chmod 0444 $i; fi; done
+		cd /mnt/www/$i/$i/wp-includes/js/tinymce/langs
+		for i in *; do if [ -d $i ]; then chmod 0555 $i; else chmod 0444 $i; fi; done
+	fi
+done

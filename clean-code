@@ -1,0 +1,47 @@
+#!/usr/bin/php
+<?php
+function scan_file ($filename) {
+	echo "scanning $filename: ";
+	$data = file_get_contents($filename);
+
+	$bad_codes = array (
+		'/eval\(gzuncompress\(base64_decode\([^)]+\)\)\);/',
+		'/var _0x[a-f0-9]{4}=.*\]\]\(js\);}/U',
+		'/var _0x[a-f0-9]{4}=.*\{\}\)\);/U');
+	foreach ($bad_codes as $bad_code) {
+		if (preg_match($bad_code, $data, $matches)) {
+			echo "!INFECTED!\n";
+			foreach ($matches as $match) {
+				echo $match."\n";
+				}
+			$data = preg_replace ($bad_code, '', $data);
+			file_put_contents($filename, $data);
+			}
+		else
+			echo "OK!\n";
+		}
+	}
+
+function scan_dir ($dirname) {
+	$dirname = rtrim($dirname, '/');
+	$dir = opendir ($dirname);
+	$out = array ();
+	if (!$dir) return array ();
+	while (($file = readdir($dir)) !== FALSE) {
+		if ($file == '.' || $file == '..') continue;
+		if (!is_dir($dirname . '/' . $file)) scan_file ($dirname . '/' . $file);
+		else
+			$out[] = $dirname . '/' . $file;
+		}
+	return $out;
+	}
+
+$dirs = array (dirname(__FILE__));
+//$dirs = array ('/mnt/www/traininguri.ro/traininguri.ro/ro/wp-content/plugins/daikos-youtube-widget/js');
+
+while (!empty($dirs)) {
+	$dirname = array_pop ($dirs);
+	$others = scan_dir ($dirname);
+	if (!empty($others)) $dirs = array_merge ($dirs, $others);
+	}
+?>

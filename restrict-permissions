@@ -1,0 +1,2 @@
+#!/bin/bash
+for i in *; do if [ -d $i ]; then chmod 0555 $i; else chmod 0444 $i; fi; done
