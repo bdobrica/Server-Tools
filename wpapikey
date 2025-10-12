@@ -1,5 +1,0 @@
-#!/bin/bash
-
-wget -q -q --no-check-certificate -O api.tmp "https://api.wordpress.org/secret-key/1.1/salt/"
-cat api.tmp
-rm api.tmp

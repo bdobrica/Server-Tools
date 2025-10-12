@@ -1,8 +1,0 @@
-#!/bin/bash
-
-/etc/init.d/nginx stop
-/etc/init.d/nginx start
-killall -9 php-cgi
-killall -9 php-cgi
-killall -9 php-cgi
-/etc/init.d/spawn-fcgi.php start

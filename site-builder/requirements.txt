@@ -1,0 +1,4 @@
+coloredlogs
+cryptography
+jinja2
+requests
