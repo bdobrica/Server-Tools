@@ -1,5 +1,7 @@
 FROM alpine:3.22.2
 
+ENV RUNTIME_VERSION=1.0.0
+
 RUN apk --update add \
     openssl \
     ca-certificates \

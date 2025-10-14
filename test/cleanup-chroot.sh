@@ -38,6 +38,11 @@ if mountpoint -q "$CHROOT_PATH/opt/site-builder"; then
     umount "$CHROOT_PATH/opt/site-builder"
 fi
 
+if mountpoint -q "$CHROOT_PATH/var/run/docker.sock"; then
+    echo "Unmounting $CHROOT_PATH/var/run/docker.sock"
+    umount "$CHROOT_PATH/var/run/docker.sock"
+fi
+
 if mountpoint -q "$CHROOT_PATH/home/testuser/site-builder"; then
     echo "Unmounting $CHROOT_PATH/home/testuser/site-builder"
     umount "$CHROOT_PATH/home/testuser/site-builder"

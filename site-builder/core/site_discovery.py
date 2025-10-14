@@ -5,6 +5,8 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List
 
+from .runtime_management import detect_runtime
+
 logger = logging.getLogger("site-builder")
 
 
@@ -35,6 +37,7 @@ def discover_sites(web_path: Path, verbose: bool = False) -> List[Dict[str, Any]
                 "web_root": subdomain.resolve().as_posix(),
                 "use_ssl": has_ssl,
                 "ip_suffix": ip_suffix,
+                "runtime": detect_runtime(subdomain),
             }
             sites.append(site)
 

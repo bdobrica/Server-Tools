@@ -60,8 +60,11 @@ services:
 
 {% for site in sites %}
     web-{{ site.slug }}:
-        image: lighttpd-php8
-        container_name: lighttpd-php8-{{ site.slug }}
+        build:
+            context: {{ site.runtime.context }}
+            dockerfile: Dockerfile
+        image: {{ site.runtime.name }}:{{ site.runtime.version }}
+        container_name: site-{{ site.slug }}
         networks:
             nginx-proxy:
                 ipv4_address: {{ IP_PREFIX }}.{{ site.ip_suffix }}

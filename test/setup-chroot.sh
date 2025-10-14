@@ -176,6 +176,9 @@ setup_site_builder_env() {
     
     # Copy site-builder to chroot
     mkdir -p "$CHROOT_DIR/home/testuser/site-builder"
+    mount --rbind "/var/run/docker.sock" "$CHROOT_DIR/var/run/docker.sock" || (
+        warn "Docker socket not found or cannot be mounted. Continuing without Docker support."
+    )
     mount --rbind "$(dirname "$0")/../site-builder" "$CHROOT_DIR/home/testuser/site-builder"
     chown -R 1000:1000 "$CHROOT_DIR/home/testuser/site-builder"
     
