@@ -45,17 +45,21 @@ A comprehensive bare-metal server configuration package for setting up isolated 
 ```
 Server-Tools/
 ├── site-builder/                   # Main configuration package
-│   ├── __main__.py                 # CLI entry point
-│   ├── config_generator/           # Configuration file generators
-│   ├── core/                       # Core functionality
-│   ├── database/                   # Database management
-│   ├── docker/                     # Docker container management
-│   ├── nginx/                      # Nginx configuration
-│   ├── ssl_certificate_manager/    # SSL certificate handling
-│   └── templates/                  # Jinja2 configuration templates
-├── docker/                         # Docker image definitions
-│   ├── lighttpd-php8/              # Lighttpd + PHP 8 container
-│   └── nginx-php8/                 # Nginx + PHP 8 container
+│   ├── pyproject.toml              # Package configuration
+│   ├── requirements.txt            # Python dependencies
+│   └── site_builder/               # Main package directory
+│       ├── __main__.py             # CLI entry point
+│       ├── config_generator/       # Configuration file generators
+│       ├── core/                   # Core functionality
+│       ├── database/               # Database management
+│       ├── docker/                 # Docker container management
+│       ├── nginx/                  # Nginx configuration
+│       ├── pkgs/                   # Package management
+│       ├── resources/              # Docker image definitions
+│       │   ├── lighttpd-php8/      # Lighttpd + PHP 8 container
+│       │   └── nginx-php8/         # Nginx + PHP 8 container
+│       ├── ssl_certificate_manager/# SSL certificate handling
+│       └── templates/              # Jinja2 configuration templates
 └── test/                           # Testing environment
     ├── setup-chroot.sh             # Full chroot setup
     ├── setup-simple-chroot.sh      # Lightweight chroot setup
@@ -72,6 +76,20 @@ Server-Tools/
 - Root or sudo access
 
 ### Installation
+
+#### Option 1: Direct Installation via pip (Recommended)
+
+```bash
+pip install git+https://github.com/bdobrica/Server-Tools.git@main#subdirectory=site-builder
+```
+
+After installation, the `site-builder` command will be available in your environment:
+
+```bash
+site-builder --help
+```
+
+#### Option 2: Manual Installation from Source
 
 1. **Clone the repository:**
    ```bash
@@ -94,22 +112,24 @@ Server-Tools/
 
 ```bash
 # Generate configurations for discovered websites
-python -m site-builder
+site-builder
 
 # Specify custom paths
-python -m site-builder \
+site-builder \
     --web-path /var/www \
     --nginx-config-path /etc/nginx/sites-available \
     --docker-compose-path /opt/docker/docker-compose.yml
 
 # Use Docker for Nginx and database
-python -m site-builder \
+site-builder \
     --nginx-mode docker \
     --database-mode docker
 
 # Force SSL certificate renewal
-python -m site-builder --renew-crts
+site-builder --renew-crts
 ```
+
+**Note**: If you installed from source, use `python -m site-builder` instead of `site-builder` in all commands above.
 
 ## ⚙️ Configuration Options
 
@@ -180,7 +200,7 @@ sudo ./cleanup-chroot.sh
 ### Building Images
 
 ```bash
-cd docker/lighttpd-php8
+cd site-builder/site_builder/resources/lighttpd-php8
 docker build -t lighttpd-php8 .
 
 cd ../nginx-php8
