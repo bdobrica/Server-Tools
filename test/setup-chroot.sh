@@ -196,25 +196,30 @@ create_helper_scripts() {
     log "Creating helper scripts..."
     
     # Create enter-chroot script
-    cat > "$CHROOT_DIR/enter-chroot.sh" << 'EOF'
+    cat > "$CHROOT_DIR/enter-chroot.sh" << EOF
 #!/bin/bash
 # Helper script to enter chroot (run from host)
 CHROOT_DIR="/opt/debian-chroot"
 
-if [[ $EUID -ne 0 ]]; then
+if [[ \$EUID -ne 0 ]]; then
     echo "This script must be run as root (use sudo)"
     exit 1
 fi
 
+# Create site-builder directory
+mkdir -p "\$CHROOT_DIR/home/testuser/site-builder"
+
 # Ensure mounts are active
-mount --bind /dev "$CHROOT_DIR/dev" 2>/dev/null || true
-mount -t devpts devpts "$CHROOT_DIR/dev/pts" 2>/dev/null || true
-mount --bind /proc "$CHROOT_DIR/proc" 2>/dev/null || true
-mount --bind /sys "$CHROOT_DIR/sys" 2>/dev/null || true
-mount --bind /tmp "$CHROOT_DIR/tmp" 2>/dev/null || true
+mount --rbind $(dirname "$0")/../site-builder "\$CHROOT_DIR/home/testuser/site-builder" 2>/dev/null || true
+mount --rbind /var/run/docker.sock "\$CHROOT_DIR/var/run/docker.sock" 2>/dev/null || true
+mount --bind /dev "\$CHROOT_DIR/dev" 2>/dev/null || true
+mount -t devpts devpts "\$CHROOT_DIR/dev/pts" 2>/dev/null || true
+mount --bind /proc "\$CHROOT_DIR/proc" 2>/dev/null || true
+mount --bind /sys "\$CHROOT_DIR/sys" 2>/dev/null || true
+mount --bind /tmp "\$CHROOT_DIR/tmp" 2>/dev/null || true
 
 # Enter chroot as testuser
-chroot "$CHROOT_DIR" /bin/bash -c "su - testuser"
+chroot "\$CHROOT_DIR" /bin/bash -c "su - testuser"
 EOF
     
     chmod +x "$CHROOT_DIR/enter-chroot.sh"

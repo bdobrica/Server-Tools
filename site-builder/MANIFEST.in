@@ -1,0 +1,4 @@
+include README.md
+include LICENSE
+recursive-include site_builder/templates *
+recursive-include site_builder/resources *

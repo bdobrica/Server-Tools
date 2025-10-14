@@ -4,6 +4,7 @@ from pathlib import Path
 
 import coloredlogs
 
+from . import get_template_path
 from .config_generator import ConfigGenerator
 from .core import (
     create_database_manager,
@@ -64,8 +65,8 @@ def parse_arguments():
     parser.add_argument(
         "--template-path",
         type=Path,
-        default=Path(__file__).parent / "templates",
-        help=f"Path to Jinja2 templates (default: {Path(__file__).parent / 'templates'})",
+        default=get_template_path(),
+        help=f"Path to Jinja2 templates (default: {get_template_path()})",
     )
 
     # Network configuration

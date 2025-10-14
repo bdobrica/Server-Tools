@@ -9,7 +9,7 @@ logger = logging.getLogger("site-builder")
 @lru_cache()
 def get_default_runtime() -> Dict[str, Any]:
     """Get the default runtime environment."""
-    runtimes_path = Path(__file__).parent.parent.resolve() / "docker"
+    runtimes_path = Path(__file__).parent.parent.resolve() / "resources"
     logger.info(f"Using default runtime from {runtimes_path / 'nginx-php8'}")
     return {
         "name": "nginx-php8",

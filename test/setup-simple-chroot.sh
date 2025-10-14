@@ -6,7 +6,7 @@
 set -e
 
 # Configuration
-CHROOT_DIR="/opt/debian-chroot-simple"
+CHROOT_DIR="/opt/debian-simple-chroot"
 DEBIAN_RELEASE="bookworm"
 ARCH="amd64"
 
@@ -157,7 +157,7 @@ create_helper_scripts() {
     log "Creating helper scripts..."
     
     # Create enter-chroot script
-    cat > "/usr/local/bin/enter-chroot-simple" << EOF
+    cat > "/usr/local/bin/enter-simple-chroot" << EOF
 #!/bin/bash
 CHROOT_DIR="$CHROOT_DIR"
 
@@ -166,7 +166,11 @@ if [[ \$EUID -ne 0 ]]; then
     exit 1
 fi
 
+# Create site-builder directory
+mkdir -p "\$CHROOT_DIR/home/testuser/site-builder"
+
 # Ensure mounts are active
+mount --rbind $(dirname "$0")/../site-builder "\$CHROOT_DIR/home/testuser/site-builder" 2>/dev/null || true
 mount --bind /dev "\$CHROOT_DIR/dev" 2>/dev/null || true
 mount -t devpts devpts "\$CHROOT_DIR/dev/pts" 2>/dev/null || true
 mount -t proc proc "\$CHROOT_DIR/proc" 2>/dev/null || true
@@ -182,10 +186,10 @@ export LANG=en_US.UTF-8
 chroot "\$CHROOT_DIR" /bin/bash -c "su - testuser"
 EOF
     
-    chmod +x "/usr/local/bin/enter-chroot-simple"
+    chmod +x "/usr/local/bin/enter-simple-chroot"
     
     # Create cleanup script
-    cat > "/usr/local/bin/cleanup-chroot-simple" << EOF
+    cat > "/usr/local/bin/cleanup-simple-chroot" << EOF
 #!/bin/bash
 CHROOT_DIR="$CHROOT_DIR"
 
@@ -209,7 +213,7 @@ else
 fi
 EOF
     
-    chmod +x "/usr/local/bin/cleanup-chroot-simple"
+    chmod +x "/usr/local/bin/cleanup-simple-chroot"
 }
 
 main() {
@@ -226,8 +230,8 @@ main() {
     log "Simple chroot environment setup complete!"
     echo
     echo -e "${GREEN}Usage:${NC}"
-    echo "  • Enter chroot: sudo enter-chroot-simple"
-    echo "  • Cleanup: sudo cleanup-chroot-simple"
+    echo "  • Enter chroot: sudo enter-simple-chroot"
+    echo "  • Cleanup: sudo cleanup-simple-chroot"
     echo
     echo -e "${GREEN}In the chroot environment:${NC}"
     echo "  • User: testuser (password: testpass)"
