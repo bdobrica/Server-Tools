@@ -7,14 +7,20 @@ logger = logging.getLogger("site-builder")
 
 
 @lru_cache()
-def get_default_runtime() -> Dict[str, Any]:
+def get_default_runtime(app_type: str = "php") -> Dict[str, Any]:
     """Get the default runtime environment."""
+    container_name = {
+        "php": "nginx-php8",
+        "python": "nginx-py312",
+        "nodejs": "nginx-njs24",
+    }.get(app_type, "nginx-php8")
+
     runtimes_path = Path(__file__).parent.parent.resolve() / "resources"
-    logger.info(f"Using default runtime from {runtimes_path / 'nginx-php8'}")
+    logger.info(f"Using default runtime from {runtimes_path / container_name}")
     return {
-        "name": "nginx-php8",
+        "name": container_name,
         "version": "latest",
-        "context": runtimes_path / "nginx-php8",
+        "context": runtimes_path / container_name,
     }
 
 
@@ -32,17 +38,30 @@ def get_runtime_version(runtime_path: Path) -> str:
     return "latest"
 
 
+def detect_default_runtime(subdomain_path: Path) -> Dict[str, Any]:
+    """Detect the default runtime environment based on common files."""
+    if (subdomain_path / "index.php").is_file():
+        return get_default_runtime("php")
+    elif (subdomain_path / "index.py").is_file():
+        return get_default_runtime("python")
+    elif (subdomain_path / "index.ts").is_file():
+        return get_default_runtime("nodejs")
+    else:
+        logger.info(f"No specific runtime files found in {subdomain_path}, using PHP as default")
+        return get_default_runtime("php")
+
+
 def detect_runtime(subdomain_path: Path) -> Dict[str, Any]:
     """Detect the runtime environment for a given subdomain based on its files."""
 
     runtime_path = subdomain_path / ".runtime"
     if not runtime_path.is_dir():
         logger.info(f"No .runtime directory found in {subdomain_path}, using default runtime")
-        return get_default_runtime()
+        return detect_default_runtime(subdomain_path)
 
     if not (runtime_path / "Dockerfile").is_file():
         logger.warning(f"No Dockerfile found in {runtime_path}, using default runtime")
-        return get_default_runtime()
+        return detect_default_runtime(subdomain_path)
 
     runtime = {
         "name": f"{subdomain_path.name}",

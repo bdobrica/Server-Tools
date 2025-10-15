@@ -18,8 +18,8 @@ A comprehensive bare-metal server configuration package for setting up isolated 
         ┌─────────────┼─────────────┐
         │             │             │
    ┌────▼────┐   ┌────▼────┐   ┌────▼────┐
-   │ Host A  │   │ Host B  │   │ Host C  │ (Docker Containers)
-   │ Docker  │   │ Docker  │   │ Docker  │
+   │ PHP App │   │Python   │   │Node.js  │ (Auto-detected Containers)
+   │ Docker  │   │ App     │   │ App     │
    └────┬────┘   └────┬────┘   └────┬────┘
         │             │             │
         └─────────────┼─────────────┘
@@ -31,13 +31,58 @@ A comprehensive bare-metal server configuration package for setting up isolated 
               └────────────────┘
 ```
 
+## 📂 Directory Structure & App Detection
+
+Site-builder automatically detects and configures different application types based on your directory structure and files. Applications are organized under `/mnt/www/` using the pattern `<domain>/<subdomain>`:
+
+```
+/mnt/www/
+├── example.com/
+│   ├── www/                    # Main website (www.example.com)
+│   │   ├── index.php          # PHP app (auto-detected)
+│   │   ├── .cert/             # SSL certificates
+│   │   │   ├── server.pem     # Server certificate
+│   │   │   └── server.key     # Private key
+│   │   └── .runtime/          # Optional: Custom runtime
+│   │       └── Dockerfile     # Custom container definition
+│   ├── api/                   # API subdomain (api.example.com)
+│   │   ├── index.py           # Python app (auto-detected)
+│   │   ├── requirements.txt   # Python dependencies
+│   │   ├── .venv/             # Virtual environment (persistent)
+│   │   └── .cert/             # SSL certificates
+│   └── app/                   # Application subdomain (app.example.com)
+│       ├── index.ts           # Node.js/TypeScript app (auto-detected)
+│       ├── package.json       # Node.js dependencies
+│       ├── .node_modules/     # Dependencies (persistent)
+│       └── .cert/             # SSL certificates
+└── another-site.com/
+    └── www/
+        ├── index.php          # Another PHP application
+        └── .cert/
+```
+
+### 🔍 Automatic App Detection
+
+Site-builder intelligently detects application types based on entry point files:
+
+| **Entry File** | **Detected Runtime** | **Container** | **Description** |
+|----------------|---------------------|---------------|-----------------|
+| `index.php` | **PHP 8** | `nginx-php8` | Traditional PHP applications with Nginx + PHP-FPM |
+| `index.py` | **Python 3.12** | `nginx-py312` | Python applications (FastAPI, Flask, Django) |
+| `index.ts` | **Node.js 24** | `nginx-njs24` | TypeScript/Node.js applications with auto-compilation |
+
+**Custom Runtimes**: Place a `Dockerfile` in the `.runtime/` directory to override automatic detection with your own container configuration.
+
 ### Key Features
 
-- **🔒 Security**: SSL/TLS encryption between proxy and containers using self-signed certificates
-- **🏠 Isolation**: Each website runs in its own Docker container
-- **⚖️ Load Balancing**: Nginx reverse proxy distributes traffic
+- **� Smart Detection**: Automatically detects PHP, Python, and Node.js applications
+- **�🔒 Security**: SSL/TLS encryption between proxy and containers using self-signed certificates
+- **🏠 Isolation**: Each website runs in its own Docker container with persistent storage
+- **⚖️ Load Balancing**: Nginx reverse proxy distributes traffic across applications
 - **🗄️ Shared Database**: Common MariaDB instance accessible to all containers
 - **🚀 Flexibility**: Native or containerized deployment for both proxy and database
+- **🛠️ Custom Runtimes**: Support for custom Docker containers via `.runtime/` directories
+- **📦 Dependency Management**: Persistent storage for Python `.venv` and Node.js `.node_modules`
 - **🧪 Testing**: Comprehensive chroot-based testing environment
 
 ## 📁 Project Structure
@@ -111,22 +156,45 @@ site-builder --help
 ### Basic Usage
 
 ```bash
-# Generate configurations for discovered websites
+# Scan /mnt/www/ and auto-configure all detected applications
 site-builder
 
-# Specify custom paths
-site-builder \
-    --web-path /var/www \
-    --nginx-config-path /etc/nginx/sites-available \
-    --docker-compose-path /opt/docker/docker-compose.yml
+# Specify custom web root path (default: /mnt/www/)
+site-builder --web-path /var/www
 
-# Use Docker for Nginx and database
+# Use Docker for Nginx and database components
 site-builder \
     --nginx-mode docker \
     --database-mode docker
 
-# Force SSL certificate renewal
+# Force SSL certificate renewal for all sites
 site-builder --renew-crts
+
+# Custom configuration paths
+site-builder \
+    --web-path /mnt/www \
+    --nginx-config-path /etc/nginx/sites-available \
+    --docker-compose-path /opt/docker/docker-compose.yml
+```
+
+### Example: Setting Up a Multi-Language Environment
+
+```bash
+# 1. Create your directory structure
+mkdir -p /mnt/www/example.com/{www,api,app}
+
+# 2. Create application entry points
+echo '<?php phpinfo(); ?>' > /mnt/www/example.com/www/index.php
+echo 'from fastapi import FastAPI; app = FastAPI()' > /mnt/www/example.com/api/index.py  
+echo 'import express from "express"; const app = express()' > /mnt/www/example.com/app/index.ts
+
+# 3. Run site-builder to auto-configure everything
+site-builder
+
+# Result: Three containers automatically configured:
+# - www.example.com → nginx-php8 (detected PHP)
+# - api.example.com → nginx-py312 (detected Python) 
+# - app.example.com → nginx-njs24 (detected TypeScript)
 ```
 
 **Note**: If you installed from source, use `python -m site-builder` instead of `site-builder` in all commands above.
@@ -183,28 +251,53 @@ sudo ./cleanup-chroot.sh
 - **Realistic Testing**: Full stack testing capabilities
 - **Easy Cleanup**: Safe environment removal
 
-## 🐳 Docker Images
+## 🐳 Docker Images & Runtime Environments
 
-### Available Images
+### Available Runtime Images
 
-1. **lighttpd-php8**: Lightweight web server with PHP 8
-   - Based on Alpine Linux
-   - Optimized for performance
-   - SSL certificate support
+#### 1. **nginx-php8** - PHP Applications
+- **Base**: Alpine Linux with Nginx + PHP-FPM 8.3
+- **Use Cases**: WordPress, Laravel, Symfony, custom PHP applications
+- **Features**: SSL termination, optimized PHP configuration
+- **Auto-detected by**: `index.php` presence
 
-2. **nginx-php8**: Nginx with PHP-FPM 8
-   - Full-featured web server
-   - Advanced configuration options
-   - SSL termination capable
+#### 2. **nginx-py312** - Python Applications  
+- **Base**: Python 3.12 slim with Nginx reverse proxy
+- **Use Cases**: FastAPI, Flask, Django applications
+- **Features**: Virtual environment support, automatic dependency installation
+- **Persistent Storage**: `.venv/` directory for Python packages
+- **Auto-detected by**: `index.py` presence
+
+#### 3. **nginx-njs24** - Node.js/TypeScript Applications
+- **Base**: Node.js 24 Alpine with Nginx reverse proxy
+- **Use Cases**: Express.js, NestJS, React SSR, custom Node.js applications
+- **Features**: TypeScript compilation, npm dependency management
+- **Persistent Storage**: `.node_modules/` directory for Node.js packages
+- **Auto-detected by**: `index.ts` presence
+
+#### 4. **lighttpd-php8** - Lightweight PHP Applications
+- **Base**: Alpine Linux with Lighttpd + PHP-FPM 8.3
+- **Use Cases**: Simple PHP sites, lightweight applications
+- **Features**: Minimal footprint, SSL support
 
 ### Building Images
 
 ```bash
-cd site-builder/site_builder/resources/lighttpd-php8
-docker build -t lighttpd-php8 .
-
-cd ../nginx-php8
+# PHP Runtime (Nginx + PHP-FPM)
+cd site-builder/site_builder/resources/nginx-php8
 docker build -t nginx-php8 .
+
+# Python Runtime (Nginx + Python 3.12)
+cd ../nginx-py312  
+docker build -t nginx-py312 .
+
+# Node.js Runtime (Nginx + Node.js 24)
+cd ../nginx-njs24
+docker build -t nginx-njs24 .
+
+# Lightweight PHP Runtime
+cd ../lighttpd-php8
+docker build -t lighttpd-php8 .
 ```
 
 ## 📋 Command Line Options
@@ -255,9 +348,21 @@ The tool uses Jinja2 templates for configuration generation:
 - `docker-compose.yml.tpl`: Docker compose template
 - `my.cnf.tpl`: MariaDB configuration template
 
-### Site Discovery
+### Site Discovery & Runtime Detection
 
-The system automatically discovers websites by scanning the web root directory structure and generates appropriate configurations for each discovered site.
+The system automatically discovers websites by scanning the `/mnt/www/` directory structure and intelligently detects the appropriate runtime environment:
+
+1. **Directory Scanning**: Discovers sites using `<domain>/<subdomain>` pattern
+2. **Runtime Detection**: Analyzes entry files (`index.php`, `index.py`, `index.ts`) to determine app type
+3. **Custom Runtime Support**: Checks for `.runtime/Dockerfile` for custom container definitions
+4. **SSL Certificate Management**: Automatically generates certificates in `.cert/` directories
+5. **Dependency Persistence**: Maintains persistent storage for language-specific dependencies
+
+**Detection Priority**:
+1. Custom `.runtime/Dockerfile` (highest priority)
+2. `index.ts` → Node.js 24 with TypeScript compilation
+3. `index.py` → Python 3.12 with FastAPI/Flask support  
+4. `index.php` → PHP 8 with Nginx + PHP-FPM (default fallback)
 
 ### SSL Certificate Workflow
 
@@ -266,6 +371,9 @@ The system automatically discovers websites by scanning the web root directory s
 3. **CSR Creation**: Creates Certificate Signing Requests
 4. **Certificate Signing**: Signs certificates with internal CA
 5. **Auto-Renewal**: Monitors and renews expiring certificates
+6. **Certificate Placement**: Stores certificates in site-specific `.cert/` directories:
+   - `server.pem` - Server certificate
+   - `server.key` - Private key  
 
 ## 🛠️ Development
 
