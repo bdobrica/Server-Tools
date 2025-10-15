@@ -47,12 +47,19 @@ RUN sed -e "s/^upload_max_filesize = .\+$/upload_max_filesize = 64M/g" \
     -e "s/^zlib\.output_compression = .\+$/zlib.output_compression = On/g" \
     -e "s/^;zlib\.output_handler =.*$/zlib.output_handler = On/g" \
     -i /etc/php83/php.ini
-COPY nginx.conf /etc/nginx/nginx.conf
-RUN mkdir -p /scripts
-COPY entrypoint.sh /scripts/entrypoint.sh
-RUN mkdir -p /var/www && \
-    mkdir -p /run/nginx && \
-    chown -R www-data /run/nginx
-RUN update-ca-certificates
 
-ENTRYPOINT ["sh", "/scripts/entrypoint.sh"]
+RUN mkdir -p /etc/nginx/templates /run/nginx /var/www
+RUN chown -R www-data /var/www && update-ca-certificates
+COPY nginx.conf /etc/nginx/templates/nginx.conf
+
+# App directory (your index.py will be mounted here at runtime)
+WORKDIR /var/www
+
+# Entry script
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Expose HTTP/HTTPS
+EXPOSE 443
+
+ENTRYPOINT ["sh", "/usr/local/bin/entrypoint.sh"]

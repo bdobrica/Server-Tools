@@ -36,6 +36,8 @@ RUN apk --update add \
     fcgi \
     && rm -Rf /var/cache/apk/*
 
+# ctype, simplexml required by expertas
+
 RUN adduser www-data -G www-data -H -s /bin/false -D
 
 RUN sed -e "s/^upload_max_filesize = .\+$/upload_max_filesize = 64M/g" \
@@ -45,12 +47,19 @@ RUN sed -e "s/^upload_max_filesize = .\+$/upload_max_filesize = 64M/g" \
     -e "s/^zlib\.output_compression = .\+$/zlib.output_compression = On/g" \
     -e "s/^;zlib\.output_handler =.*$/zlib.output_handler = On/g" \
     -i /etc/php83/php.ini
-COPY lighttpd.conf /etc/lighttpd/lighttpd.conf
-RUN mkdir -p /scripts
-COPY entrypoint.sh /scripts/entrypoint.sh
-RUN mkdir -p /var/www && \
-    mkdir -p /run/lighttpd && \
-    chown -R www-data /run/lighttpd
-RUN update-ca-certificates
 
-ENTRYPOINT ["sh", "/scripts/entrypoint.sh"]
+RUN mkdir -p /etc/lighttpd/templates /run/lighttpd /var/www
+RUN chown -R www-data /var/www && update-ca-certificates
+COPY lighttpd.conf /etc/lighttpd/templates/lighttpd.conf
+
+# App directory (your index.php will be mounted here at runtime)
+WORKDIR /var/www
+
+# Entry script
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Expose HTTP/HTTPS
+EXPOSE 443
+
+ENTRYPOINT ["sh", "/usr/local/bin/entrypoint.sh"]
