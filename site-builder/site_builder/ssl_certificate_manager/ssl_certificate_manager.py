@@ -221,10 +221,10 @@ class SSLCertificateManager:
             proxy_ssl_folder.mkdir(parents=True, exist_ok=True)
 
         # File paths
-        proxy_ssl_key = proxy_ssl_folder / "server.key"
-        proxy_ssl_csr = proxy_ssl_folder / "server.csr"
-        proxy_ssl_crt = proxy_ssl_folder / "server.crt"
-        proxy_ssl_pem = proxy_ssl_folder / "server.pem"
+        proxy_ssl_key = proxy_ssl_folder / "client.key"
+        proxy_ssl_csr = proxy_ssl_folder / "client.csr"
+        proxy_ssl_crt = proxy_ssl_folder / "client.crt"
+        proxy_ssl_pem = proxy_ssl_folder / "client.pem"
 
         # Generate private key
         private_key = None
