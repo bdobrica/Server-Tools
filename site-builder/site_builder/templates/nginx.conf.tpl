@@ -42,7 +42,6 @@ server {
         proxy_ssl_protocols           TLSv1 TLSv1.1 TLSv1.2;
         proxy_ssl_ciphers             HIGH:!aNULL:!MD5;
         proxy_ssl_trusted_certificate {{ ROOT_CA_CRT }};
-        proxy_ssl_password_file	      {{ PROXY_SSL_PATH }}/client.pwd;
         proxy_ssl_name                {{ site.name }};
 
         proxy_ssl_verify        on;
