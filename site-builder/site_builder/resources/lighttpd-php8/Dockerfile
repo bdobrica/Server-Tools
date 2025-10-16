@@ -5,6 +5,7 @@ ENV RUNTIME_VERSION=1.0.0
 RUN apk --update add \
     openssl \
     ca-certificates \
+    envsubst \
     lighttpd \
     php-common \
     php-dom \

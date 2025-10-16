@@ -3,8 +3,12 @@ FROM python:3.12-slim-bookworm
 
 # System deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    nginx ca-certificates curl python3-venv && \
-    rm -rf /var/lib/apt/lists/*
+    ca-certificates \
+    curl \
+    envsubst \
+    nginx \
+    python3-venv \
+    && rm -rf /var/lib/apt/lists/*
 
 # Nginx setup
 RUN mkdir -p /etc/nginx/templates /run/nginx

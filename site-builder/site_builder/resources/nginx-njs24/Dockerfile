@@ -5,9 +5,10 @@ ENV RUNTIME_VERSION=1.0.0
 
 # System deps including nginx
 RUN apk update && apk add --no-install-recommends \
-    nginx \
     ca-certificates \
     curl \
+    envsubst \
+    nginx \
     && rm -rf /var/cache/apk/*
 
 # Install TypeScript globally

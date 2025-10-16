@@ -94,4 +94,4 @@ networks:
         ipam:
             config:
                 - subnet: {{ IP_PREFIX }}.0/24
-                  gateway: {{ IP_PREFIX }}.10
+                  gateway: {{ IP_PREFIX }}.1

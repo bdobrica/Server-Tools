@@ -6,9 +6,11 @@ set -eu
 : "${UVICORN_PORT:=8000}"
 : "${UVICORN_WORKERS:=1}"
 : "${UVICORN_LOG_LEVEL:=warning}"
-: "${SSL_CERT:=/var/ssl/www/server.pem}"
-: "${SSL_KEY:=/var/ssl/www/server.key}"
+: "${SSL_CERT:=/var/ssl/www/client.pem}"
+: "${SSL_KEY:=/var/ssl/www/client.key}"
 : "${SSL_ROOT_CA:=/var/ssl/root/ca.crt}"
+
+export UVICORN_HOST UVICORN_PORT UVICORN_WORKERS UVICORN_LOG_LEVEL SSL_CERT SSL_KEY SSL_ROOT_CA
 
 # Quick sanity checks
 if [ ! -f "${SSL_CERT}" ] || [ ! -f "${SSL_KEY}" ] || [ ! -f "${SSL_ROOT_CA}" ]; then

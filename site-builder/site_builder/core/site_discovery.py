@@ -20,12 +20,13 @@ def discover_sites(web_path: Path, verbose: bool = False) -> List[Dict[str, Any]
         if not domain.is_dir() or not domain_re.match(domain.name):
             continue
 
+        # Check if SSL certificates exist in the web directory
+        ssl_cert_path = domain / ".cert"
+
         for subdomain in domain.glob("*"):
             if not subdomain.is_dir() or not domain_re.match(subdomain.name):
                 continue
 
-            # Check if SSL certificates exist in the web directory
-            ssl_cert_path = subdomain / ".cert"
             has_ssl = (ssl_cert_path / f"{subdomain.name}.key").is_file() and (
                 ssl_cert_path / f"{subdomain.name}.crt"
             ).is_file()
