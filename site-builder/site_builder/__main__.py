@@ -7,7 +7,7 @@ import coloredlogs
 from . import get_template_path
 from .config_generator import ConfigGenerator
 from .core import (
-    create_database_manager,
+    create_database_managers,
     create_nginx_manager,
     create_ssl_manager,
     discover_sites,
@@ -137,17 +137,40 @@ def parse_arguments():
 
     # Database deployment options
     parser.add_argument(
-        "--database-mode",
+        "--mysql-mode",
         type=str,
         choices=["docker", "native", "none"],
         default="native",
-        help="Database deployment mode: docker, native, or none (default: native)",
+        help="MySQL deployment mode: docker, native, or none (default: native)",
     )
     parser.add_argument(
         "--mysql-config-path",
         type=Path,
         default=Path("/etc/mysql"),
         help="MySQL configuration path (default: /etc/mysql)",
+    )
+    parser.add_argument(
+        "--mysql-root-password",
+        type=str,
+        help="MySQL root password (generated if not provided)",
+    )
+    parser.add_argument(
+        "--postgres-mode",
+        type=str,
+        choices=["docker", "native", "none"],
+        default="native",
+        help="PostgreSQL deployment mode: docker, native, or none (default: native)",
+    )
+    parser.add_argument(
+        "--postgres-config-path",
+        type=Path,
+        default=None,
+        help="PostgreSQL configuration path (auto-detected if not provided, typically /etc/postgresql/<version>/main/)",
+    )
+    parser.add_argument(
+        "--postgres-root-password",
+        type=str,
+        help="PostgreSQL root password (generated if not provided)",
     )
     parser.add_argument(
         "--database-root-password",
@@ -186,22 +209,25 @@ def main():
         "IP_PREFIX": args.ip_prefix,
         "PROXY_SSL_PATH": args.root_ca_path.resolve().as_posix(),
         "ROOT_CA_CRT": root_ca_crt.resolve().as_posix(),
-        "DB_MODE": args.database_mode,
-        "DB_ROOT_PASSWORD": args.database_root_password or "generated_password_placeholder",
+        "MYSQL_MODE": args.mysql_mode,
+        "MYSQL_ROOT_PASSWORD": args.mysql_root_password or "generated_password_placeholder",
+        "ENABLE_MYSQL_DATABASE": True if args.mysql_mode == "docker" else False,
+        "POSTGRES_MODE": args.postgres_mode,
+        "POSTGRES_ROOT_PASSWORD": args.postgres_root_password or "generated_password_placeholder",
+        "ENABLE_POSTGRES_DATABASE": True if args.postgres_mode == "docker" else False,
         "ENABLE_PROXY": True if args.nginx_mode == "docker" else False,
-        "ENABLE_DATABASE": True if args.database_mode == "docker" else False,
     }
 
     # Initialize managers using factory functions
     nginx_manager = create_nginx_manager(args, template_vars)
-    database_manager = create_database_manager(args, template_vars)
+    database_managers = create_database_managers(args, template_vars)
 
     # Setup services (install if needed)
     nginx_manager.setup()
-    if database_manager:
-        database_manager.setup()
+    for db_type, db_manager in database_managers.items():
+        db_manager.setup()
         # Update template vars with actual database password
-        template_vars["DB_ROOT_PASSWORD"] = database_manager.root_password
+        template_vars[f"{db_type.upper()}_ROOT_PASSWORD"] = db_manager.root_password
 
     # Clean up existing nginx enabled sites
     nginx_manager.cleanup_sites()
@@ -253,12 +279,13 @@ def main():
     nginx_manager.generate_main_config(sites, config_generator)
 
     # Generate database configuration
-    if database_manager:
+    for database_manager in database_managers.values():
         database_manager.generate_config(config_generator)
 
     # Start services and reload configuration
-    if database_manager and not database_manager.is_running():
-        database_manager.start()
+    for database_manager in database_managers.values():
+        if database_manager and not database_manager.is_running():
+            database_manager.start()
 
     if not nginx_manager.is_running():
         nginx_manager.start()
@@ -266,11 +293,19 @@ def main():
         nginx_manager.reload()
 
     # Log configuration summary
+    database_modes = []
+    if args.mysql_mode != "none":
+        database_modes.append(f"mysql:{args.mysql_mode}")
+    if args.postgres_mode != "none":
+        database_modes.append(f"postgres:{args.postgres_mode}")
+
+    database_str = ",".join(database_modes) if database_modes else "none"
+
     logger.info(
         "Successfully configured %d sites using nginx:%s database:%s",
         len(sites),
         args.nginx_mode,
-        args.database_mode,
+        database_str,
     )
 
 

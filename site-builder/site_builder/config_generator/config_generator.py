@@ -26,3 +26,8 @@ class ConfigGenerator:
         """Render MariaDB configuration using Jinja2 template."""
         template = self.env.get_template("my.cnf.tpl")
         return template.render(**template_vars)
+
+    def render_postgresql_config(self, template_vars: Dict[str, Any]) -> str:
+        """Render PostgreSQL configuration using Jinja2 template."""
+        template = self.env.get_template("postgresql.conf.tpl")
+        return template.render(**template_vars)

@@ -3,5 +3,13 @@
 from .database_manager import DatabaseManager
 from .mariadb_docker import MariaDBDockerManager
 from .mariadb_native import MariaDBNativeManager
+from .postgresql_docker import PostgreSQLDockerManager
+from .postgresql_native import PostgreSQLNativeManager
 
-__all__ = ["DatabaseManager", "MariaDBDockerManager", "MariaDBNativeManager"]
+__all__ = [
+    "DatabaseManager",
+    "MariaDBDockerManager",
+    "MariaDBNativeManager",
+    "PostgreSQLDockerManager",
+    "PostgreSQLNativeManager",
+]
