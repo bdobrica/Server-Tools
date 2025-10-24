@@ -83,7 +83,7 @@ class PostgreSQLNativeManager(DatabaseManager):
 
     def _store_root_password(self) -> None:
         """Store the root password in a secure file."""
-        password_file = self.config_path / "db_root_password.txt"
+        password_file = self.config_path / "root_password.txt"
         if not password_file.exists():
             with password_file.open("w") as f:
                 f.write(self.root_password)

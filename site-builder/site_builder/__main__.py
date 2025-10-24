@@ -39,6 +39,12 @@ def parse_arguments():
 
     # Paths configuration
     parser.add_argument(
+        "--site-builder-config-path",
+        type=Path,
+        default=Path("/etc/site-builder/"),
+        help="Path to site-builder configuration directory (default: /etc/site-builder/)",
+    )
+    parser.add_argument(
         "--web-path",
         type=Path,
         default=Path("/mnt/www/"),

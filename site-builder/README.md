@@ -80,6 +80,7 @@ site-builder --nginx-mode docker --mysql-mode docker --postgres-mode docker --we
 
 #### Basic Configuration
 - `--web-path`: Path to web root directory (default: /mnt/www/)
+- `--site-builder-config-path`: Site-builder configuration directory (default: /etc/site-builder/)
 - `--root-ca-path`: Path to root CA directory (default: /etc/site-builder/ssl)
 - `--docker-compose-path`: Docker compose file path (default: /etc/site-builder/docker/docker-compose.yml)
 
@@ -91,10 +92,10 @@ site-builder --nginx-mode docker --mysql-mode docker --postgres-mode docker --we
 #### Database Configuration
 - `--mysql-mode`: MySQL/MariaDB deployment mode - `docker`, `native`, or `none` (default: native)
 - `--mysql-config-path`: MySQL configuration path (default: /etc/mysql)
-- `--mysql-root-password`: MySQL root password (generated if not provided)
+- `--mysql-root-password`: MySQL root password (generated if not provided, stored in `<site-builder-config-path>/mysql/`)
 - `--postgres-mode`: PostgreSQL deployment mode - `docker`, `native`, or `none` (default: native)  
 - `--postgres-config-path`: PostgreSQL configuration path (default: /etc/postgresql)
-- `--postgres-root-password`: PostgreSQL root password (generated if not provided)
+- `--postgres-root-password`: PostgreSQL root password (generated if not provided, stored in `<site-builder-config-path>/postgres/`)
 
 #### SSL Certificate Configuration
 - `--root-ca-password`: Root CA password (if not provided, will read from password.txt)
@@ -121,6 +122,12 @@ site-builder --mysql-mode native --postgres-mode none --renew-crts --web-path /v
 
 # Custom network configuration for Docker containers
 site-builder --nginx-mode docker --mysql-mode docker --ip-prefix 10.0.1 --ip-start 10 --web-path /var/www
+
+# Custom configuration directory for site-builder files
+site-builder --site-builder-config-path /opt/site-builder --web-path /var/www
+# This will store passwords in:
+# - MySQL: /opt/site-builder/mysql/root_password.txt  
+# - PostgreSQL: /opt/site-builder/postgres/root_password.txt
 ```
 
 ## Architecture
@@ -139,6 +146,7 @@ The tool supports multiple database configurations:
 - **Simultaneous Operation**: Both databases can run simultaneously in different modes
 - **Dynamic Configuration**: Database configurations are generated based on the selected modes
 - **Password Management**: Automatic password generation or use provided passwords
+- **Secure Password Storage**: Native database passwords stored in dedicated subdirectories under `/etc/site-builder/`
 
 ### Service Deployment Modes
 
@@ -153,6 +161,34 @@ The tool supports multiple database configurations:
 - Automated Docker Compose generation
 - Isolated service environments
 - Easier deployment and scaling
+
+## Configuration & Security
+
+### Database Password Storage (Native Mode)
+
+When using native database deployment mode, site-builder securely stores database root passwords in dedicated configuration subdirectories:
+
+```
+/etc/site-builder/
+├── ssl/                    # SSL certificates and CA
+├── mysql/                  # MySQL/MariaDB configuration
+│   └── root_password.txt   # MySQL root password (chmod 600)
+├── postgres/               # PostgreSQL configuration  
+│   └── root_password.txt   # PostgreSQL root password (chmod 600)
+└── docker/                 # Docker configurations
+    └── docker-compose.yml
+```
+
+**Security Features:**
+- Password files are created with restrictive permissions (600 - owner read/write only)
+- Passwords are automatically generated if not provided via command line
+- Each database type has its own isolated configuration directory
+- Passwords persist across service restarts and configuration regeneration
+
+**Directory Structure:**
+- `--site-builder-config-path`: Main configuration directory (default: `/etc/site-builder/`)
+- MySQL passwords: `<site-builder-config-path>/mysql/root_password.txt`
+- PostgreSQL passwords: `<site-builder-config-path>/postgres/root_password.txt`
 
 ## Development
 
@@ -212,7 +248,13 @@ python test_postgresql.py
    - Improved template variable management
    - Enhanced logging with detailed service mode reporting
 
-4. **Bug Fixes**
+4. **Security & Password Management**
+   - Centralized password storage for native database managers
+   - Secure password files stored in dedicated subdirectories under `/etc/site-builder/`
+   - Improved password file organization: `mysql/root_password.txt` and `postgres/root_password.txt`
+   - Consistent configuration path management across all database managers
+
+5. **Bug Fixes**
    - Fixed undefined `args.database_mode` reference in main function
    - Corrected hardcoded configuration paths in factory functions
    - Improved path resolution for Docker mode configurations

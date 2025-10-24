@@ -59,8 +59,9 @@ def _create_mysql_manager(
             root_password=args.mysql_root_password,
         )
     elif args.mysql_mode == "native":
+        mysql_config_path = args.site_builder_config_path / "mysql"
         return MariaDBNativeManager(
-            config_path=args.root_ca_path,  # For storing password file
+            config_path=mysql_config_path,  # For storing password file
             template_vars=template_vars,
             mysql_config_path=args.mysql_config_path,
             root_password=args.mysql_root_password,
@@ -86,8 +87,9 @@ def _create_postgres_manager(
             root_password=args.postgres_root_password,
         )
     elif args.postgres_mode == "native":
+        postgres_config_path = args.site_builder_config_path / "postgres"
         return PostgreSQLNativeManager(
-            config_path=args.root_ca_path,  # For storing password file
+            config_path=postgres_config_path,  # For storing password file
             template_vars=template_vars,
             postgres_config_path=args.postgres_config_path,
             root_password=args.postgres_root_password,
