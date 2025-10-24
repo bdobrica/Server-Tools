@@ -125,7 +125,7 @@ Server-Tools/
 #### Option 1: Direct Installation via pip (Recommended)
 
 ```bash
-pip install git+https://github.com/bdobrica/Server-Tools.git@master#subdirectory=site-builder
+pip install git+https://github.com/bdobrica/Server-Tools.git@main#subdirectory=site-builder
 ```
 
 After installation, the `site-builder` command will be available in your environment:
