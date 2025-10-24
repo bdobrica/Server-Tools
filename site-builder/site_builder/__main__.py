@@ -184,6 +184,13 @@ def parse_arguments():
         help="Database root password (generated if not provided)",
     )
 
+    # Service management options
+    parser.add_argument(
+        "--skip-service-restart",
+        action="store_true",
+        help="Skip restarting services after configuration",
+    )
+
     # Output options
     parser.add_argument(
         "--verbose",
@@ -295,7 +302,7 @@ def main():
 
     if not nginx_manager.is_running():
         nginx_manager.start()
-    else:
+    elif not args.skip_service_restart:
         nginx_manager.reload()
 
     # Log configuration summary
