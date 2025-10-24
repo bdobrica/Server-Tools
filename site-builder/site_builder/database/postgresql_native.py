@@ -116,8 +116,6 @@ class PostgreSQLNativeManager(DatabaseManager):
         try:
             # Set password for postgres user
             cmd = [
-                "sudo",
-                "-u",
                 "postgres",
                 "psql",
                 "-c",
