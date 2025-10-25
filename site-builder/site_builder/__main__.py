@@ -12,6 +12,8 @@ from .core import (
     create_ssl_manager,
     discover_sites,
     get_ca_password,
+    load_config,
+    save_config,
     validate_paths,
 )
 
@@ -22,18 +24,33 @@ logger = logging.getLogger("site-builder")
 
 def parse_arguments():
     """Parse command line arguments."""
+    # Load saved configuration first to use as defaults
+    # We need to parse --site-builder-config-path first to know where to look for config
+    pre_parser = argparse.ArgumentParser(add_help=False)
+    pre_parser.add_argument(
+        "--site-builder-config-path",
+        type=Path,
+        default=Path("/etc/site-builder/"),
+        help="Path to site-builder configuration directory (default: /etc/site-builder/)",
+    )
+    pre_args, _ = pre_parser.parse_known_args()
+
+    # Load saved configuration
+    saved_config = load_config(pre_args.site_builder_config_path)
+
     parser = argparse.ArgumentParser(description="Generate Nginx and Docker configurations for web services")
 
     # SSL Certificate Authority configuration
     parser.add_argument(
         "--root-ca-path",
         type=Path,
-        default=Path("/etc/site-builder/ssl"),
+        default=saved_config.get("root_ca_path", Path("/etc/site-builder/ssl")),
         help="Path to root CA directory (default: /etc/site-builder/ssl)",
     )
     parser.add_argument(
         "--root-ca-password",
         type=str,
+        default=saved_config.get("root_ca_password"),
         help="Root CA password (if not provided, will read from password.txt)",
     )
 
@@ -41,37 +58,37 @@ def parse_arguments():
     parser.add_argument(
         "--site-builder-config-path",
         type=Path,
-        default=Path("/etc/site-builder/"),
+        default=saved_config.get("site_builder_config_path", Path("/etc/site-builder/")),
         help="Path to site-builder configuration directory (default: /etc/site-builder/)",
     )
     parser.add_argument(
         "--web-path",
         type=Path,
-        default=Path("/mnt/www/"),
+        default=saved_config.get("web_path", Path("/mnt/www/")),
         help="Path to web root directory (default: /mnt/www/)",
     )
     parser.add_argument(
         "--nginx-config-path",
         type=Path,
-        default=Path("/etc/nginx/sites-available"),
+        default=saved_config.get("nginx_config_path", Path("/etc/nginx/sites-available")),
         help="Nginx sites-available path (default: /etc/nginx/sites-available)",
     )
     parser.add_argument(
         "--nginx-enabled-path",
         type=Path,
-        default=Path("/etc/nginx/sites-enabled"),
+        default=saved_config.get("nginx_enabled_path", Path("/etc/nginx/sites-enabled")),
         help="Nginx sites-enabled path (default: /etc/nginx/sites-enabled)",
     )
     parser.add_argument(
         "--docker-compose-path",
         type=Path,
-        default=Path("/etc/site-builder/docker/docker-compose.yml"),
+        default=saved_config.get("docker_compose_path", Path("/etc/site-builder/docker/docker-compose.yml")),
         help="Docker compose file path (default: /etc/site-builder/docker/docker-compose.yml)",
     )
     parser.add_argument(
         "--template-path",
         type=Path,
-        default=get_template_path(),
+        default=saved_config.get("template_path", get_template_path()),
         help=f"Path to Jinja2 templates (default: {get_template_path()})",
     )
 
@@ -79,13 +96,13 @@ def parse_arguments():
     parser.add_argument(
         "--ip-prefix",
         type=str,
-        default="192.168.100",
+        default=saved_config.get("ip_prefix", "192.168.100"),
         help="IP prefix for containers (default: 192.168.100)",
     )
     parser.add_argument(
         "--ip-start",
         type=int,
-        default=2,
+        default=saved_config.get("ip_start", 2),
         help="Starting IP suffix for containers (default: 2)",
     )
 
@@ -93,22 +110,25 @@ def parse_arguments():
     parser.add_argument(
         "--renew-keys",
         action="store_true",
+        default=saved_config.get("renew_keys", False),
         help="Force renewal of SSL private keys",
     )
     parser.add_argument(
         "--renew-csrs",
         action="store_true",
+        default=saved_config.get("renew_csrs", False),
         help="Force renewal of certificate signing requests",
     )
     parser.add_argument(
         "--renew-crts",
         action="store_true",
+        default=saved_config.get("renew_crts", False),
         help="Force renewal of SSL certificates",
     )
     parser.add_argument(
         "--auto-renew-days",
         type=int,
-        default=30,
+        default=saved_config.get("auto_renew_days", 30),
         help="Auto-renew certificates expiring within N days (default: 30)",
     )
 
@@ -116,19 +136,19 @@ def parse_arguments():
     parser.add_argument(
         "--country",
         type=str,
-        default="RO",
+        default=saved_config.get("country", "RO"),
         help="Country code for SSL certificates (default: RO)",
     )
     parser.add_argument(
         "--state",
         type=str,
-        default="Bucharest",
+        default=saved_config.get("state", "Bucharest"),
         help="State/Province for SSL certificates (default: Bucharest)",
     )
     parser.add_argument(
         "--organisation",
         type=str,
-        default="Perseus Reverse Proxy",
+        default=saved_config.get("organisation", "Perseus Reverse Proxy"),
         help="Organisation for SSL certificates (default: Perseus Reverse Proxy)",
     )
 
@@ -137,7 +157,7 @@ def parse_arguments():
         "--nginx-mode",
         type=str,
         choices=["docker", "native"],
-        default="native",
+        default=saved_config.get("nginx_mode", "native"),
         help="Nginx deployment mode: docker or native (default: native)",
     )
 
@@ -146,41 +166,44 @@ def parse_arguments():
         "--mysql-mode",
         type=str,
         choices=["docker", "native", "none"],
-        default="native",
+        default=saved_config.get("mysql_mode", "native"),
         help="MySQL deployment mode: docker, native, or none (default: native)",
     )
     parser.add_argument(
         "--mysql-config-path",
         type=Path,
-        default=Path("/etc/mysql"),
+        default=saved_config.get("mysql_config_path", Path("/etc/mysql")),
         help="MySQL configuration path (default: /etc/mysql)",
     )
     parser.add_argument(
         "--mysql-root-password",
         type=str,
+        default=saved_config.get("mysql_root_password"),
         help="MySQL root password (generated if not provided)",
     )
     parser.add_argument(
         "--postgres-mode",
         type=str,
         choices=["docker", "native", "none"],
-        default="native",
+        default=saved_config.get("postgres_mode", "native"),
         help="PostgreSQL deployment mode: docker, native, or none (default: native)",
     )
     parser.add_argument(
         "--postgres-config-path",
         type=Path,
-        default=None,
+        default=saved_config.get("postgres_config_path"),
         help="PostgreSQL configuration path (auto-detected if not provided, typically /etc/postgresql/<version>/main/)",
     )
     parser.add_argument(
         "--postgres-root-password",
         type=str,
+        default=saved_config.get("postgres_root_password"),
         help="PostgreSQL root password (generated if not provided)",
     )
     parser.add_argument(
         "--database-root-password",
         type=str,
+        default=saved_config.get("database_root_password"),
         help="Database root password (generated if not provided)",
     )
 
@@ -188,6 +211,7 @@ def parse_arguments():
     parser.add_argument(
         "--skip-service-restart",
         action="store_true",
+        default=saved_config.get("skip_service_restart", False),
         help="Skip restarting services after configuration",
     )
 
@@ -196,6 +220,7 @@ def parse_arguments():
         "--verbose",
         "-v",
         action="store_true",
+        default=saved_config.get("verbose", False),
         help="Enable verbose output",
     )
 
@@ -205,6 +230,10 @@ def parse_arguments():
 def main():
     """Main function."""
     args = parse_arguments()
+
+    # Save configuration for future runs
+    save_config(args.site_builder_config_path, args)
+
     validate_paths(args)
 
     # Get CA password
