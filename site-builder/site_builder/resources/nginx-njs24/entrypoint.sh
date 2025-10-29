@@ -25,6 +25,10 @@ envsubst '\$NODE_PORT \$SSL_CERT \$SSL_KEY \$SSL_ROOT_CA' \
   < /etc/nginx/templates/nginx.conf \
   > /etc/nginx/nginx.conf
 
+# Ensure www-data owns the /var/www directory
+echo "Setting ownership of /var/www to www-data:www-data..."
+chown -R www-data:www-data /var/www
+
 # Change to app directory
 cd /var/www
 
@@ -42,68 +46,78 @@ fi
 # Handle Node.js dependencies
 echo "Installing Node.js dependencies..."
 
-# Configure npm to use .node_modules instead of node_modules
-npm config set modules-folder .node_modules
+# Run npm commands as www-data user
+su - www-data -s /bin/sh -c "
+    cd /var/www
+    # Configure npm to use .node_modules instead of node_modules
+    npm config set modules-folder .node_modules
 
-# Check if .node_modules exists and is populated
-if [ -d "/var/www/.node_modules" ] && [ "$(ls -A /var/www/.node_modules 2>/dev/null)" ]; then
-    echo "Using existing .node_modules in /var/www/.node_modules"
-    # Still run npm install in case package.json changed
-    npm install --production=false || echo "Warning: npm install encountered issues, continuing..."
-else
-    echo "Installing dependencies to /var/www/.node_modules"
-    npm install --production=false || {
-        echo "ERROR: Failed to install npm dependencies"
-        exit 1
-    }
-fi
+    # Check if .node_modules exists and is populated
+    if [ -d '/var/www/.node_modules' ] && [ \"\$(ls -A /var/www/.node_modules 2>/dev/null)\" ]; then
+        echo 'Using existing .node_modules in /var/www/.node_modules'
+        # Still run npm install in case package.json changed
+        npm install --production=false || echo 'Warning: npm install encountered issues, continuing...'
+    else
+        echo 'Installing dependencies to /var/www/.node_modules'
+        npm install --production=false || {
+            echo 'ERROR: Failed to install npm dependencies'
+            exit 1
+        }
+    fi
+"
 
 # Check if TypeScript config exists, create a basic one if not
-if [ ! -f "tsconfig.json" ]; then
-    echo "Creating basic tsconfig.json..."
-    cat > tsconfig.json << 'EOF'
+su - www-data -s /bin/sh -c "
+    cd /var/www
+    if [ ! -f 'tsconfig.json' ]; then
+        echo 'Creating basic tsconfig.json...'
+        cat > tsconfig.json << 'EOF'
 {
-  "compilerOptions": {
-    "target": "ES2020",
-    "module": "commonjs",
-    "lib": ["ES2020"],
-    "outDir": "./dist",
-    "rootDir": "./",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true
+  \"compilerOptions\": {
+    \"target\": \"ES2020\",
+    \"module\": \"commonjs\",
+    \"lib\": [\"ES2020\"],
+    \"outDir\": \"./dist\",
+    \"rootDir\": \"./\",
+    \"strict\": true,
+    \"esModuleInterop\": true,
+    \"skipLibCheck\": true,
+    \"forceConsistentCasingInFileNames\": true,
+    \"resolveJsonModule\": true,
+    \"declaration\": true,
+    \"declarationMap\": true,
+    \"sourceMap\": true
   },
-  "include": ["*.ts", "src/**/*"],
-  "exclude": [".node_modules", "dist"]
+  \"include\": [\"*.ts\", \"src/**/*\"],
+  \"exclude\": [\".node_modules\", \"dist\"]
 }
 EOF
-fi
+    fi
 
-# Compile TypeScript
-echo "Compiling TypeScript..."
-if ! tsc; then
-    echo "ERROR: TypeScript compilation failed"
-    exit 1
-fi
+    # Compile TypeScript
+    echo 'Compiling TypeScript...'
+    if ! tsc; then
+        echo 'ERROR: TypeScript compilation failed'
+        exit 1
+    fi
+"
 
 # Determine the main entry point
-if [ -f "dist/index.js" ]; then
+if [ -f "/var/www/dist/index.js" ]; then
     MAIN_FILE="dist/index.js"
-elif [ -f "index.js" ]; then
+elif [ -f "/var/www/index.js" ]; then
     MAIN_FILE="index.js"
 else
     echo "ERROR: No compiled JavaScript file found (expected dist/index.js or index.js)"
     exit 1
 fi
 
-# Start Node.js application (background)
-echo "Starting Node.js application on port ${NODE_PORT}..."
-NODE_ENV="${NODE_ENV}" node "${MAIN_FILE}" &
+# Start Node.js application (background) as www-data user
+echo "Starting Node.js application on port ${NODE_PORT} as www-data user..."
+su - www-data -s /bin/sh -c "
+    cd /var/www
+    NODE_ENV='${NODE_ENV}' NODE_PORT='${NODE_PORT}' node '${MAIN_FILE}'
+" &
 
 # Wait a moment for Node.js to start
 sleep 2
