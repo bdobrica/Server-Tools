@@ -1,6 +1,6 @@
-FROM alpine:3.22.2
+FROM alpine:3.23.2
 
-ENV RUNTIME_VERSION=1.0.0
+ENV RUNTIME_VERSION=1.0.1
 
 RUN apk --update add \
     openssl \
@@ -53,7 +53,7 @@ RUN sed -e "s/^upload_max_filesize = .\+$/upload_max_filesize = 64M/g" \
     -i /etc/php83/php-fpm.d/www.conf
 
 RUN mkdir -p /etc/nginx/templates /run/nginx /var/www
-RUN chown -R www-data /var/www && update-ca-certificates
+RUN chown -R www-data /var/www /var/lib/nginx && update-ca-certificates
 COPY nginx.conf /etc/nginx/templates/nginx.conf
 
 # App directory (your index.py will be mounted here at runtime)

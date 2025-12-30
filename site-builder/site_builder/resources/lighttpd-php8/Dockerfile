@@ -1,6 +1,6 @@
-FROM alpine:3.22.2
+FROM alpine:3.23.2
 
-ENV RUNTIME_VERSION=1.0.0
+ENV RUNTIME_VERSION=1.0.1
 
 RUN apk --update add \
     openssl \

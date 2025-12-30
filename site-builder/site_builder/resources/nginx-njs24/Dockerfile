@@ -1,7 +1,7 @@
 # Node.js + Nginx (SSL) single-container image
-FROM node:24-alpine
+FROM node:25.2-alpine3.23
 
-ENV RUNTIME_VERSION=1.0.0
+ENV RUNTIME_VERSION=1.0.1
 
 # System deps including nginx
 RUN apk update && apk add --no-install-recommends \
@@ -15,8 +15,8 @@ RUN apk update && apk add --no-install-recommends \
 RUN npm install -g typescript ts-node
 
 # Nginx setup
-RUN mkdir -p /etc/nginx/templates /run/nginx
-RUN update-ca-certificates
+RUN mkdir -p /etc/nginx/templates /run/nginx /var/www
+RUN chown -R www-data /var/www /var/lib/nginx && update-ca-certificates
 COPY nginx.conf /etc/nginx/templates/nginx.conf
 
 # App directory (your index.ts and package.json will be mounted here at runtime)
