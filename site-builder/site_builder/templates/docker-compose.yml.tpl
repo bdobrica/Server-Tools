@@ -28,12 +28,12 @@ services:
             - web-{{ site.slug }}
 {% endfor %}
 {% endif %}
-{% if ENABLE_DATABASE %}
+{% if ENABLE_MYSQL_DATABASE %}
     mariadb:
         image: mariadb:10.6
         container_name: mariadb-server
         environment:
-            - MYSQL_ROOT_PASSWORD={{ DB_ROOT_PASSWORD }}
+            - MYSQL_ROOT_PASSWORD={{ MYSQL_ROOT_PASSWORD }}
             - MYSQL_CHARACTER_SET_SERVER=utf8mb4
             - MYSQL_COLLATION_SERVER=utf8mb4_unicode_ci
         networks:
@@ -56,6 +56,33 @@ services:
         ports:
             - "3306:3306"
         restart: unless-stopped
+{% endif %}
+{% if ENABLE_POSTGRES_DATABASE %}
+    postgres:
+        image: postgres:15-alpine
+        container_name: postgres-server
+        environment:
+            - POSTGRES_PASSWORD={{ POSTGRES_ROOT_PASSWORD }}
+            - POSTGRES_USER=postgres
+            - PGDATA=/var/lib/postgresql/data/pgdata
+        networks:
+            nginx-proxy:
+                ipv4_address: {{ IP_PREFIX }}.253
+        volumes:
+            - type: bind
+              source: "/etc/site-builder/postgres/postgresql.conf"
+              target: "/etc/postgresql/postgresql.conf"
+              read_only: true
+            - type: bind
+              source: "/etc/site-builder/postgres/data"
+              target: "/var/lib/postgresql/data"
+            - type: bind
+              source: "/etc/site-builder/postgres/logs"
+              target: "/var/log/postgresql"
+        ports:
+            - "5432:5432"
+        restart: unless-stopped
+        command: postgres -c config_file=/etc/postgresql/postgresql.conf
 {% endif %}
 
 {% for site in sites %}
@@ -83,9 +110,14 @@ services:
               source: "/var/run/mysqld/mysqld.sock"
               target: "/var/run/mysqld/mysqld.sock"
 {% endif %}
-{% if ENABLE_DATABASE %}
+{% if ENABLE_MYSQL_DATABASE or ENABLE_POSTGRES_DATABASE %}
         depends_on:
+{% if ENABLE_MYSQL_DATABASE %}
             - mariadb
+{% endif %}
+{% if ENABLE_POSTGRES_DATABASE %}
+            - postgres
+{% endif %}
 {% endif %}
         restart: unless-stopped
 {% endfor %}

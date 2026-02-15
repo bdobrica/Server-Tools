@@ -211,6 +211,8 @@ def save_config(config_path: Path, args: argparse.Namespace) -> None:
     try:
         with config_file.open("w") as f:
             config.write(f)
+        # Set restrictive permissions (read/write for owner only) since config contains passwords
+        config_file.chmod(0o600)
         logger.info(f"Saved configuration to {config_file}")
     except Exception as e:
         logger.error(f"Failed to save configuration to {config_file}: {e}")

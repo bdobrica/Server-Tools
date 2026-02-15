@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from ..config_generator import ConfigGenerator
+from ..core.validation import validate_database_name, validate_privileges, validate_username
 from ..pkgs import PKGsManager
 from .database_manager import DatabaseManager
 
@@ -175,6 +176,9 @@ class MariaDBNativeManager(DatabaseManager):
 
     def create_database(self, database_name: str) -> None:
         """Create a new database."""
+        # Validate database name to prevent SQL injection
+        database_name = validate_database_name(database_name)
+        
         try:
             cmd = [
                 "mysql",
@@ -192,6 +196,11 @@ class MariaDBNativeManager(DatabaseManager):
 
     def create_user(self, username: str, password: str, database_name: Optional[str] = None) -> None:
         """Create a new database user with optional database access."""
+        # Validate username to prevent SQL injection
+        username = validate_username(username)
+        if database_name:
+            database_name = validate_database_name(database_name)
+        
         try:
             # Create user
             cmd = [
@@ -214,6 +223,11 @@ class MariaDBNativeManager(DatabaseManager):
 
     def grant_privileges(self, username: str, database_name: str, privileges: str = "ALL") -> None:
         """Grant privileges to a user on a database."""
+        # Validate inputs to prevent SQL injection
+        username = validate_username(username)
+        database_name = validate_database_name(database_name)
+        privileges = validate_privileges(privileges)
+        
         try:
             cmd = [
                 "mysql",
