@@ -5,6 +5,8 @@ import secrets
 import shutil
 import string
 import subprocess
+import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -59,6 +61,24 @@ class MariaDBNativeManager(DatabaseManager):
             with password_file.open("w") as f:
                 f.write(self.root_password)
             password_file.chmod(0o600)  # Read/write for owner only
+
+    @contextmanager
+    def _create_credentials_file(self):
+        """Create a temporary credentials file for MariaDB authentication.
+        
+        This prevents passwords from being visible in process lists.
+        """
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.cnf', delete=False) as f:
+            f.write('[client]\n')
+            f.write('user=root\n')
+            f.write(f'password={self.root_password}\n')
+            temp_path = Path(f.name)
+        
+        try:
+            temp_path.chmod(0o600)  # Read/write for owner only
+            yield temp_path
+        finally:
+            temp_path.unlink(missing_ok=True)
 
     def _is_installed(self) -> bool:
         """Check if MariaDB is installed on the system."""
@@ -167,10 +187,13 @@ class MariaDBNativeManager(DatabaseManager):
 
         # Fallback to checking mysql process
         try:
-            result = subprocess.run(
-                ["mysqladmin", "-uroot", f"-p{self.root_password}", "ping"], capture_output=True, text=True
-            )
-            return result.returncode == 0
+            with self._create_credentials_file() as creds_file:
+                result = subprocess.run(
+                    ["mysqladmin", f"--defaults-extra-file={creds_file}", "ping"],
+                    capture_output=True,
+                    text=True
+                )
+                return result.returncode == 0
         except subprocess.CalledProcessError:
             return False
 
@@ -180,15 +203,15 @@ class MariaDBNativeManager(DatabaseManager):
         database_name = validate_database_name(database_name)
         
         try:
-            cmd = [
-                "mysql",
-                "-uroot",
-                f"-p{self.root_password}",
-                "-e",
-                f"CREATE DATABASE IF NOT EXISTS `{database_name}` "
-                f"CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;",
-            ]
-            subprocess.run(cmd, check=True)
+            with self._create_credentials_file() as creds_file:
+                cmd = [
+                    "mysql",
+                    f"--defaults-extra-file={creds_file}",
+                    "-e",
+                    f"CREATE DATABASE IF NOT EXISTS `{database_name}` "
+                    f"CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;",
+                ]
+                subprocess.run(cmd, check=True)
             logger.info("Created database: %s", database_name)
         except subprocess.CalledProcessError as e:
             logger.error("Failed to create database %s: %s", database_name, e)
@@ -204,14 +227,14 @@ class MariaDBNativeManager(DatabaseManager):
         
         try:
             # Create user
-            cmd = [
-                "mysql",
-                "-uroot",
-                f"-p{self.root_password}",
-                "-e",
-                f"CREATE USER IF NOT EXISTS '{username}'@'localhost' IDENTIFIED BY '{password}';",
-            ]
-            subprocess.run(cmd, check=True)
+            with self._create_credentials_file() as creds_file:
+                cmd = [
+                    "mysql",
+                    f"--defaults-extra-file={creds_file}",
+                    "-e",
+                    f"CREATE USER IF NOT EXISTS '{username}'@'localhost' IDENTIFIED BY '{password}';",
+                ]
+                subprocess.run(cmd, check=True)
 
             # Grant privileges if database specified
             if database_name:
@@ -230,15 +253,15 @@ class MariaDBNativeManager(DatabaseManager):
         privileges = validate_privileges(privileges)
         
         try:
-            cmd = [
-                "mysql",
-                "-uroot",
-                f"-p{self.root_password}",
-                "-e",
-                f"GRANT {privileges} PRIVILEGES ON `{database_name}`.* TO '{username}'@'localhost'; "
-                f"FLUSH PRIVILEGES;",
-            ]
-            subprocess.run(cmd, check=True)
+            with self._create_credentials_file() as creds_file:
+                cmd = [
+                    "mysql",
+                    f"--defaults-extra-file={creds_file}",
+                    "-e",
+                    f"GRANT {privileges} PRIVILEGES ON `{database_name}`.* TO '{username}'@'localhost'; "
+                    f"FLUSH PRIVILEGES;",
+                ]
+                subprocess.run(cmd, check=True)
             logger.info("Granted %s privileges on %s to %s", privileges, database_name, username)
         except subprocess.CalledProcessError as e:
             logger.error("Failed to grant privileges: %s", e)
@@ -248,18 +271,18 @@ class MariaDBNativeManager(DatabaseManager):
         """Backup a database to a file."""
         try:
             backup_path.parent.mkdir(parents=True, exist_ok=True)
-            cmd = [
-                "mysqldump",
-                "-uroot",
-                f"-p{self.root_password}",
-                "--single-transaction",
-                "--routines",
-                "--triggers",
-                database_name,
-            ]
+            with self._create_credentials_file() as creds_file:
+                cmd = [
+                    "mysqldump",
+                    f"--defaults-extra-file={creds_file}",
+                    "--single-transaction",
+                    "--routines",
+                    "--triggers",
+                    database_name,
+                ]
 
-            with backup_path.open("w") as f:
-                subprocess.run(cmd, stdout=f, check=True)
+                with backup_path.open("w") as f:
+                    subprocess.run(cmd, stdout=f, check=True)
 
             logger.info("Backed up database %s to %s", database_name, backup_path)
         except subprocess.CalledProcessError as e:
@@ -275,10 +298,11 @@ class MariaDBNativeManager(DatabaseManager):
             # Create database if it doesn't exist
             self.create_database(database_name)
 
-            cmd = ["mysql", "-uroot", f"-p{self.root_password}", database_name]
+            with self._create_credentials_file() as creds_file:
+                cmd = ["mysql", f"--defaults-extra-file={creds_file}", database_name]
 
-            with backup_path.open("r") as f:
-                subprocess.run(cmd, stdin=f, check=True)
+                with backup_path.open("r") as f:
+                    subprocess.run(cmd, stdin=f, check=True)
 
             logger.info("Restored database %s from %s", database_name, backup_path)
         except subprocess.CalledProcessError as e:

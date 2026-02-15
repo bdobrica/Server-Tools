@@ -3,12 +3,13 @@
 import logging
 import shutil
 import subprocess
-from functools import cached_property
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from ..pkgs import PKGsManager
 from .nginx_manager import NginxManager
+
+logger = logging.getLogger(__name__)
 
 
 class NginxNativeManager(NginxManager):
@@ -34,18 +35,13 @@ class NginxNativeManager(NginxManager):
         self.nginx_config_path.mkdir(parents=True, exist_ok=True)
         self.nginx_enabled_path.mkdir(parents=True, exist_ok=True)
 
-    @cached_property
-    def logger(self) -> logging.Logger:
-        logger = logging.getLogger(__name__)
-        return logger
-
     def _is_installed(self) -> bool:
         """Check if nginx is installed on the system."""
         return shutil.which("nginx") is not None
 
     def _install(self) -> None:
         """Install nginx using the system's package manager."""
-        self.logger.info("Installing nginx...")
+        logger.info("Installing nginx...")
         pkgs_manager = PKGsManager()
         pkgs_manager.install(["nginx"])
 
@@ -53,30 +49,30 @@ class NginxNativeManager(NginxManager):
         try:
             subprocess.run(["systemctl", "enable", "nginx"], check=True)
         except subprocess.CalledProcessError:
-            self.logger.warning("Could not enable nginx service via systemctl")
+            logger.warning("Could not enable nginx service via systemctl")
 
-        self.logger.info("Nginx installed successfully")
+        logger.info("Nginx installed successfully")
 
     def setup(self) -> None:
         """Set up native Nginx service."""
         if not self._is_installed():
             self._install()
 
-        self.logger.info("Native Nginx manager setup complete")
+        logger.info("Native Nginx manager setup complete")
 
     def start(self) -> None:
         """Start the native Nginx service."""
         try:
             # Try systemctl first
             subprocess.run(["systemctl", "start", "nginx"], check=True)
-            self.logger.info("Nginx service started via systemctl")
+            logger.info("Nginx service started via systemctl")
         except subprocess.CalledProcessError:
             try:
                 # Fallback to service command
                 subprocess.run(["service", "nginx", "start"], check=True)
-                self.logger.info("Nginx service started via service command")
+                logger.info("Nginx service started via service command")
             except subprocess.CalledProcessError as e:
-                self.logger.error("Failed to start Nginx service: %s", e)
+                logger.error("Failed to start Nginx service: %s", e)
                 raise
 
     def stop(self) -> None:
@@ -84,14 +80,14 @@ class NginxNativeManager(NginxManager):
         try:
             # Try systemctl first
             subprocess.run(["systemctl", "stop", "nginx"], check=True)
-            self.logger.info("Nginx service stopped via systemctl")
+            logger.info("Nginx service stopped via systemctl")
         except subprocess.CalledProcessError:
             try:
                 # Fallback to service command
                 subprocess.run(["service", "nginx", "stop"], check=True)
-                self.logger.info("Nginx service stopped via service command")
+                logger.info("Nginx service stopped via service command")
             except subprocess.CalledProcessError as e:
-                self.logger.error("Failed to stop Nginx service: %s", e)
+                logger.error("Failed to stop Nginx service: %s", e)
                 raise
 
     def reload(self) -> None:
@@ -103,7 +99,7 @@ class NginxNativeManager(NginxManager):
             # Try systemctl reload first
             try:
                 subprocess.run(["systemctl", "reload", "nginx"], check=True)
-                self.logger.info("Nginx configuration reloaded via systemctl")
+                logger.info("Nginx configuration reloaded via systemctl")
                 return
             except subprocess.CalledProcessError:
                 pass
@@ -111,7 +107,7 @@ class NginxNativeManager(NginxManager):
             # Fallback to service command
             try:
                 subprocess.run(["service", "nginx", "reload"], check=True)
-                self.logger.info("Nginx configuration reloaded via service command")
+                logger.info("Nginx configuration reloaded via service command")
                 return
             except subprocess.CalledProcessError:
                 pass
@@ -120,12 +116,12 @@ class NginxNativeManager(NginxManager):
             nginx_pid = self._get_nginx_master_pid()
             if nginx_pid:
                 subprocess.run(["kill", "-HUP", str(nginx_pid)], check=True)
-                self.logger.info("Nginx configuration reloaded via SIGHUP signal")
+                logger.info("Nginx configuration reloaded via SIGHUP signal")
             else:
                 raise RuntimeError("Could not find nginx master process")
 
         except subprocess.CalledProcessError as e:
-            self.logger.error("Failed to reload Nginx configuration: %s", e)
+            logger.error("Failed to reload Nginx configuration: %s", e)
             raise
 
     def is_running(self) -> bool:
@@ -150,7 +146,7 @@ class NginxNativeManager(NginxManager):
             config = config_generator.render_nginx_config(site, site_template_vars)
             fp.write(config)
 
-        self.logger.info("Generated nginx config for %s", site["name"])
+        logger.info("Generated nginx config for %s", site["name"])
 
     def generate_main_config(self, sites: List[Dict[str, Any]], config_generator) -> None:
         """Generate main Nginx configuration (no additional main config needed for native)."""
@@ -158,34 +154,55 @@ class NginxNativeManager(NginxManager):
         # The main nginx.conf is managed by the system
         pass
 
+    def _test_config(self) -> bool:
+        """Test nginx configuration syntax.
+        
+        Returns:
+            True if configuration is valid, False otherwise
+        """
+        try:
+            subprocess.run(["nginx", "-t"], check=True, capture_output=True, text=True)
+            return True
+        except subprocess.CalledProcessError as e:
+            logger.error("Nginx configuration test failed: %s", e.stderr)
+            return False
+
     def enable_site(self, site_name: str) -> None:
         """Enable a site configuration by creating a symlink."""
         available_path = self.nginx_config_path / site_name
         enabled_path = self.nginx_enabled_path / site_name
 
         if not available_path.exists():
-            self.logger.error("Site configuration not found: %s", available_path)
+            logger.error("Site configuration not found: %s", available_path)
             return
 
         if enabled_path.exists():
             enabled_path.unlink()
 
         enabled_path.symlink_to(available_path)
-        self.logger.info("Enabled site: %s", site_name)
+        
+        # Test configuration after enabling
+        if not self._test_config():
+            # Rollback: remove the symlink if config is invalid
+            enabled_path.unlink()
+            logger.error("Configuration test failed for %s, site not enabled", site_name)
+            raise RuntimeError(f"Invalid nginx configuration for site: {site_name}")
+        
+        logger.info("Enabled site: %s", site_name)
 
     def disable_site(self, site_name: str) -> None:
         """Disable a site configuration by removing the symlink."""
         enabled_path = self.nginx_enabled_path / site_name
         if enabled_path.exists():
             enabled_path.unlink()
-            self.logger.info("Disabled site: %s", site_name)
+            logger.info("Disabled site: %s", site_name)
 
     def cleanup_sites(self) -> None:
         """Clean up existing site configurations."""
         for site_enabled in self.nginx_enabled_path.glob("*"):
             if site_enabled.is_symlink():
                 site_enabled.unlink()
-        self.logger.info("Cleaned up existing site configurations")
+        logger.info("Cleaned up existing site configurations")
 
     def _get_nginx_master_pid(self) -> Optional[int]:
         """Get the PID of the nginx master process."""

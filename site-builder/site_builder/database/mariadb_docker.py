@@ -18,12 +18,16 @@ logger = logging.getLogger(__name__)
 class MariaDBDockerManager(DatabaseManager):
     """MariaDB service management using Docker containers."""
 
+    # Shared Docker manager instance
+    _shared_docker_manager: Optional[DockerManager] = None
+
     def __init__(
         self,
         config_path: Path,
         template_vars: Dict[str, Any],
         docker_compose_path: Path,
         root_password: Optional[str] = None,
+        docker_manager: Optional[DockerManager] = None,
     ):
         """
         Initialize Docker-based MariaDB manager.
@@ -33,6 +37,7 @@ class MariaDBDockerManager(DatabaseManager):
             template_vars: Template variables for configuration generation
             docker_compose_path: Path to docker-compose.yml file
             root_password: MariaDB root password (generated if not provided)
+            docker_manager: Optional shared DockerManager instance (created if not provided)
         """
         super().__init__(config_path, template_vars)
         self.docker_compose_path = docker_compose_path
@@ -40,6 +45,15 @@ class MariaDBDockerManager(DatabaseManager):
         self.config_file = config_path / "my.cnf"
         self.data_path = config_path / "data"
         self.logs_path = config_path / "logs"
+
+        # Use provided docker_manager or create/reuse shared instance
+        if docker_manager is not None:
+            self.docker_manager = docker_manager
+        elif MariaDBDockerManager._shared_docker_manager is None:
+            MariaDBDockerManager._shared_docker_manager = DockerManager()
+            self.docker_manager = MariaDBDockerManager._shared_docker_manager
+        else:
+            self.docker_manager = MariaDBDockerManager._shared_docker_manager
 
         # Create necessary directories
         self.data_path.mkdir(parents=True, exist_ok=True)
@@ -63,15 +77,13 @@ class MariaDBDockerManager(DatabaseManager):
 
     def _is_docker_installed(self) -> bool:
         """Check if Docker is installed on the system."""
-        docker_manager = DockerManager()
-        return docker_manager._has_docker and docker_manager._has_docker_compose
+        return self.docker_manager._has_docker and self.docker_manager._has_docker_compose
 
     def setup(self) -> None:
         """Set up Docker-based MariaDB service."""
         if not self._is_docker_installed():
             logger.info("Docker not found, installing...")
-            docker_manager = DockerManager()
-            docker_manager.setup()
+            self.docker_manager.setup()
 
         # Configuration will be generated later by generate_config()
         logger.info("Docker-based MariaDB manager setup complete")

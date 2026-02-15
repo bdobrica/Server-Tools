@@ -3,26 +3,18 @@
 import logging
 import shutil
 import subprocess
-from functools import cached_property
 from typing import Optional
+
+logger = logging.getLogger(__name__)
+
+
+logger = logging.getLogger(__name__)
 
 
 class PKGsManager:
     def __init__(self):
-        pass
-
-    @cached_property
-    def logger(self) -> logging.Logger:
-        logger = logging.getLogger(__name__)
-        return logger
-
-    @cached_property
-    def is_debian_based(self) -> bool:
-        return shutil.which("apt-get") is not None
-
-    @cached_property
-    def is_redhat_based(self) -> bool:
-        return shutil.which("dnf") is not None
+        self.is_debian_based = shutil.which("apt-get") is not None
+        self.is_redhat_based = shutil.which("dnf") is not None
 
     def _update_package_list(self) -> None:
         if self.is_debian_based:
@@ -42,11 +34,11 @@ class PKGsManager:
 
     def install(self, packages: list) -> None:
         """Install the given list of packages using the system's package manager."""
-        self.logger.info("Updating package list...")
+        logger.info("Updating package list...")
         self._update_package_list()
-        self.logger.info("Installing packages: %s", ", ".join(packages))
+        logger.info("Installing packages: %s", ", ".join(packages))
         self._install_packages(packages)
-        self.logger.info("Package installation complete")
+        logger.info("Package installation complete")
 
     def add_repository(self, repo_url_or_line: str, repo_name: Optional[str] = None) -> None:
         """Add a repository to the system's package manager.

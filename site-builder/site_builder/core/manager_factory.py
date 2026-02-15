@@ -1,7 +1,7 @@
 """Manager factories for site-builder."""
 
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Dict, Optional, Union
 
 from ..database import (
     MariaDBDockerManager,
@@ -10,9 +10,10 @@ from ..database import (
     PostgreSQLNativeManager,
 )
 from ..nginx import NginxDockerManager, NginxNativeManager
+from .types import SiteBuilderArgs
 
 
-def create_nginx_manager(args: Any, template_vars: Dict[str, Any]) -> Union[NginxDockerManager, NginxNativeManager]:
+def create_nginx_manager(args: SiteBuilderArgs, template_vars: Dict[str, any]) -> Union[NginxDockerManager, NginxNativeManager]:
     """Create and configure Nginx manager based on mode."""
     if args.nginx_mode == "docker":
         # Use the docker-compose directory as parent for nginx configs
@@ -30,7 +31,7 @@ def create_nginx_manager(args: Any, template_vars: Dict[str, Any]) -> Union[Ngin
 
 
 def _create_mysql_manager(
-    args: Any, template_vars: Dict[str, Any]
+    args: SiteBuilderArgs, template_vars: Dict[str, any]
 ) -> Optional[Union[MariaDBDockerManager, MariaDBNativeManager]]:
     """Create and configure MySQL manager based on mode."""
     if args.mysql_mode == "none":
@@ -62,7 +63,7 @@ def _create_mysql_manager(
 
 
 def _create_postgres_manager(
-    args: Any, template_vars: Dict[str, Any]
+    args: SiteBuilderArgs, template_vars: Dict[str, any]
 ) -> Optional[Union[PostgreSQLDockerManager, PostgreSQLNativeManager]]:
     """Create and configure PostgreSQL manager based on mode."""
     if args.postgres_mode == "none":
@@ -94,7 +95,7 @@ def _create_postgres_manager(
 
 
 def create_database_managers(
-    args: Any, template_vars: Dict[str, Any]
+    args: SiteBuilderArgs, template_vars: Dict[str, any]
 ) -> Dict[str, Union[MariaDBDockerManager, MariaDBNativeManager, PostgreSQLDockerManager, PostgreSQLNativeManager]]:
     """Create and configure Database manager based on mode and type."""
     managers = {}

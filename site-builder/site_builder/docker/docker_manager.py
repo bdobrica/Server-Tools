@@ -3,27 +3,21 @@
 import logging
 import shutil
 import subprocess
-from functools import cached_property
 
 import requests
 
 from ..pkgs import PKGsManager
 
+logger = logging.getLogger(__name__)
+
+
+logger = logging.getLogger(__name__)
+
 
 class DockerManager:
-    @cached_property
-    def logger(self) -> logging.Logger:
-        logger = logging.getLogger(__name__)
-        return logger
-
-    @cached_property
-    def _has_docker(self) -> bool:
-        return shutil.which("docker") is not None
-
-    @cached_property
-    def _has_docker_compose(self) -> bool:
-        # Check for both standalone docker-compose and docker compose plugin
-        return shutil.which("docker") is not None and self._has_compose_plugin()
+    def __init__(self):
+        self._has_docker = shutil.which("docker") is not None
+        self._has_docker_compose = self._has_docker and self._has_compose_plugin()
 
     def _has_compose_plugin(self) -> bool:
         """Check if docker compose plugin is available."""
@@ -36,7 +30,7 @@ class DockerManager:
     def setup(self) -> None:
         """Set up Docker environment if not already set up."""
         if self._has_docker and self._has_docker_compose:
-            self.logger.info("Docker and Docker Compose are already installed")
+            logger.info("Docker and Docker Compose are already installed")
             return None
 
         pkgs_manager = PKGsManager()

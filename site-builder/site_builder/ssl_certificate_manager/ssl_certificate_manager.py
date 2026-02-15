@@ -2,7 +2,6 @@
 
 import logging
 from datetime import datetime, timedelta, timezone
-from functools import cached_property
 from pathlib import Path
 
 from cryptography import x509
@@ -10,6 +9,8 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ed25519
 from cryptography.x509 import oid
 from cryptography.x509.oid import NameOID
+
+logger = logging.getLogger(__name__)
 
 
 class SSLCertificateManager:
@@ -34,16 +35,6 @@ class SSLCertificateManager:
         self.organisation = organisation
         self._ca_key = None
         self._ca_cert = None
-
-    @cached_property
-    def logger(self) -> logging.Logger:
-        """Get a logger instance."""
-        logger = logging.getLogger(self.__class__.__name__)
-        if not logger.hasHandlers():
-            handler = logging.StreamHandler()
-            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-            handler.setFormatter(formatter)
-        return logger
 
     def _generate_ca_key(self):
         """Generate a new Ed25519 CA private key."""
@@ -102,7 +93,7 @@ class SSLCertificateManager:
                         key_file.read(), password=self.root_ca_password.encode() if self.root_ca_password else None
                     )
             except FileNotFoundError:
-                self.logger.warning("CA private key not found, generating a new one.")
+                logger.warning("CA private key not found, generating a new one.")
                 self._ca_key = self._generate_ca_key()
             except ValueError as e:
                 raise ValueError(f"Invalid CA private key or password: {e}")
@@ -117,7 +108,7 @@ class SSLCertificateManager:
                 with self.root_ca_crt.open("rb") as cert_file:
                     self._ca_cert = x509.load_pem_x509_certificate(cert_file.read())
             except FileNotFoundError:
-                self.logger.warning("CA certificate not found, generating a new one.")
+                logger.warning("CA certificate not found, generating a new one.")
                 self._ca_cert = self._generate_ca_cert(self._load_ca_key())
             except ValueError as e:
                 raise ValueError(f"Invalid CA certificate: {e}")
@@ -203,7 +194,8 @@ class SSLCertificateManager:
                 expiry_date = cert.not_valid_after_utc
                 renewal_threshold = datetime.now(timezone.utc) + timedelta(days=days_before_expiry)
                 return expiry_date <= renewal_threshold
-        except Exception:
+        except (OSError, ValueError) as e:
+            logger.warning("Could not read certificate %s: %s", cert_path, e)
             return True  # If we can't read the cert, assume it needs renewal
 
     def generate_certificates(
@@ -240,6 +232,8 @@ class SSLCertificateManager:
                         encryption_algorithm=serialization.NoEncryption(),
                     )
                 )
+            # Set restrictive permissions on private key file
+            proxy_ssl_key.chmod(0o600)
         else:
             # Load existing private key
             with proxy_ssl_key.open("rb") as key_file:

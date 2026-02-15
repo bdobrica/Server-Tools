@@ -4,7 +4,8 @@ import logging
 import re
 import secrets
 import sys
-from typing import Any
+
+from .types import SiteBuilderArgs
 
 logger = logging.getLogger("site-builder")
 
@@ -141,26 +142,26 @@ def validate_password(password: str) -> str:
     return password
 
 
-def validate_paths(args: Any) -> None:
+def validate_paths(args: SiteBuilderArgs) -> None:
     """Validate required paths exist."""
     if not args.root_ca_path.exists():
         try:
             args.root_ca_path.mkdir(parents=True, exist_ok=True)
-        except Exception as err:
+        except (OSError, PermissionError) as err:
             logger.error("Failed to create Root CA path: %s", err)
             sys.exit(1)
 
     if not args.web_path.exists():
         try:
             args.web_path.mkdir(parents=True, exist_ok=True)
-        except Exception as err:
+        except (OSError, PermissionError) as err:
             logger.error("Failed to create Web path: %s", err)
             sys.exit(1)
 
     if not args.template_path.exists():
         try:
             args.template_path.mkdir(parents=True, exist_ok=True)
-        except Exception as err:
+        except (OSError, PermissionError) as err:
             logger.error("Failed to create Template path: %s", err)
             sys.exit(1)
 
@@ -168,7 +169,7 @@ def validate_paths(args: Any) -> None:
     try:
         args.nginx_config_path.mkdir(parents=True, exist_ok=True)
         args.nginx_enabled_path.mkdir(parents=True, exist_ok=True)
-    except Exception as err:
+    except (OSError, PermissionError) as err:
         logger.error("Failed to create nginx directories: %s", err)
         sys.exit(1)
 
@@ -176,7 +177,7 @@ def validate_paths(args: Any) -> None:
     args.docker_compose_path.parent.mkdir(parents=True, exist_ok=True)
 
 
-def get_ca_password(args: Any) -> str:
+def get_ca_password(args: SiteBuilderArgs) -> str:
     """Get CA password from argument or file."""
     if args.root_ca_password:
         return args.root_ca_password
@@ -195,6 +196,6 @@ def get_ca_password(args: Any) -> str:
         password_file.chmod(0o600)
         logger.info("Generated new CA password and saved to %s", password_file)
         return password
-    except Exception as err:
+    except (OSError, PermissionError) as err:
         logger.error("Failed to write CA password to %s: %s", password_file, err)
         sys.exit(1)

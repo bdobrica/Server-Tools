@@ -1,11 +1,10 @@
 """SSL manager factory for site-builder."""
 
-from typing import Any
-
 from ..ssl_certificate_manager import SSLCertificateManager
+from .types import SiteBuilderArgs
 
 
-def create_ssl_manager(args: Any, ca_password: str) -> SSLCertificateManager:
+def create_ssl_manager(args: SiteBuilderArgs, ca_password: str) -> SSLCertificateManager:
     """Create and configure SSL certificate manager."""
     root_ca_key = args.root_ca_path / "perseus_ca.key"
     root_ca_crt = args.root_ca_path / "perseus_ca.crt"

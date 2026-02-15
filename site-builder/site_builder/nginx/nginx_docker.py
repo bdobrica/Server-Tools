@@ -2,18 +2,28 @@
 
 import logging
 import subprocess
-from functools import cached_property
 from pathlib import Path
 from typing import Any, Dict, List
 
 from ..docker import DockerManager
 from .nginx_manager import NginxManager
 
+logger = logging.getLogger(__name__)
+
 
 class NginxDockerManager(NginxManager):
     """Nginx service management using Docker containers."""
 
-    def __init__(self, config_path: Path, template_vars: Dict[str, Any], docker_compose_path: Path):
+    # Shared Docker manager instance
+    _shared_docker_manager: Optional[DockerManager] = None
+
+    def __init__(
+        self,
+        config_path: Path,
+        template_vars: Dict[str, Any],
+        docker_compose_path: Path,
+        docker_manager: Optional[DockerManager] = None,
+    ):
         """
         Initialize Docker-based Nginx manager.
 
@@ -21,34 +31,37 @@ class NginxDockerManager(NginxManager):
             config_path: Path where nginx configuration files will be stored (/etc/site-builder/nginx)
             template_vars: Template variables for configuration generation
             docker_compose_path: Path to docker-compose.yml file
+            docker_manager: Optional shared DockerManager instance (created if not provided)
         """
         super().__init__(config_path, template_vars)
         self.docker_compose_path = docker_compose_path
         self.sites_available_path = config_path / "sites-available"
         self.sites_enabled_path = config_path / "sites-enabled"
 
+        # Use provided docker_manager or create/reuse shared instance
+        if docker_manager is not None:
+            self.docker_manager = docker_manager
+        elif NginxDockerManager._shared_docker_manager is None:
+            NginxDockerManager._shared_docker_manager = DockerManager()
+            self.docker_manager = NginxDockerManager._shared_docker_manager
+        else:
+            self.docker_manager = NginxDockerManager._shared_docker_manager
+
         # Create nginx-specific directories
         self.sites_available_path.mkdir(parents=True, exist_ok=True)
         self.sites_enabled_path.mkdir(parents=True, exist_ok=True)
 
-    @cached_property
-    def logger(self) -> logging.Logger:
-        logger = logging.getLogger(__name__)
-        return logger
-
     def _is_docker_installed(self) -> bool:
         """Check if Docker is installed on the system."""
-        docker_manager = DockerManager()
-        return docker_manager._has_docker and docker_manager._has_docker_compose
+        return self.docker_manager._has_docker and self.docker_manager._has_docker_compose
 
     def setup(self) -> None:
         """Set up Docker-based Nginx service."""
         if not self._is_docker_installed():
-            self.logger.info("Docker not found, installing...")
-            docker_manager = DockerManager()
-            docker_manager.setup()
+            logger.info("Docker not found, installing...")
+            self.docker_manager.setup()
 
-        self.logger.info("Docker-based Nginx manager setup complete")
+        logger.info("Docker-based Nginx manager setup complete")
 
     def start(self) -> None:
         """Start the Nginx Docker service."""
@@ -58,9 +71,9 @@ class NginxDockerManager(NginxManager):
                 check=True,
                 cwd=self.docker_compose_path.parent,
             )
-            self.logger.info("Nginx Docker service started")
+            logger.info("Nginx Docker service started")
         except subprocess.CalledProcessError as e:
-            self.logger.error("Failed to start Nginx Docker service: %s", e)
+            logger.error("Failed to start Nginx Docker service: %s", e)
             raise
 
     def stop(self) -> None:
@@ -71,9 +84,9 @@ class NginxDockerManager(NginxManager):
                 check=True,
                 cwd=self.docker_compose_path.parent,
             )
-            self.logger.info("Nginx Docker service stopped")
+            logger.info("Nginx Docker service stopped")
         except subprocess.CalledProcessError as e:
-            self.logger.error("Failed to stop Nginx Docker service: %s", e)
+            logger.error("Failed to stop Nginx Docker service: %s", e)
             raise
 
     def reload(self) -> None:
@@ -90,14 +103,14 @@ class NginxDockerManager(NginxManager):
 
             container_id = result.stdout.strip()
             if not container_id:
-                self.logger.error("Nginx container not found")
+                logger.error("Nginx container not found")
                 return
 
             # Send SIGHUP to nginx master process
             subprocess.run(["docker", "exec", container_id, "nginx", "-s", "reload"], check=True)
-            self.logger.info("Nginx configuration reloaded successfully")
+            logger.info("Nginx configuration reloaded successfully")
         except subprocess.CalledProcessError as e:
-            self.logger.error("Failed to reload Nginx configuration: %s", e)
+            logger.error("Failed to reload Nginx configuration: %s", e)
             raise
 
     def is_running(self) -> bool:
@@ -126,8 +139,15 @@ class NginxDockerManager(NginxManager):
         self.logger.info("Generated nginx config for %s", site["name"])
 
     def generate_main_config(self, sites: List[Dict[str, Any]], config_generator) -> None:
-        """Generate main Nginx configuration and update docker-compose.yml."""
-        # Update docker-compose.yml to include nginx service
+        """Generate main Nginx configuration and update docker-compose.yml.
+        
+        Note: For Docker-based Nginx, the docker-compose.yml generation is centralized
+        in __main__.py along with all other docker services to ensure proper service
+        dependencies and network configuration. This method is intentionally a no-op
+        as the Docker service configuration is handled during the main orchestration.
+        
+        Individual site configurations are still managed via generate_site_config().
+        """
         pass
 
     def enable_site(self, site_name: str) -> None:
@@ -136,25 +156,25 @@ class NginxDockerManager(NginxManager):
         enabled_path = self.sites_enabled_path / site_name
 
         if not available_path.exists():
-            self.logger.error("Site configuration not found: %s", available_path)
+            logger.error("Site configuration not found: %s", available_path)
             return
 
         if enabled_path.exists():
             enabled_path.unlink()
 
         enabled_path.symlink_to(available_path)
-        self.logger.info("Enabled site: %s", site_name)
+        logger.info("Enabled site: %s", site_name)
 
     def disable_site(self, site_name: str) -> None:
         """Disable a site configuration by removing the symlink."""
         enabled_path = self.sites_enabled_path / site_name
         if enabled_path.exists():
             enabled_path.unlink()
-            self.logger.info("Disabled site: %s", site_name)
+            logger.info("Disabled site: %s", site_name)
 
     def cleanup_sites(self) -> None:
         """Clean up existing site configurations."""
         for site_enabled in self.sites_enabled_path.glob("*"):
             if site_enabled.is_symlink():
                 site_enabled.unlink()
-        self.logger.info("Cleaned up existing site configurations")
+        logger.info("Cleaned up existing site configurations")
