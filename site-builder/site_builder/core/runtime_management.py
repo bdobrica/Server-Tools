@@ -11,6 +11,7 @@ class RuntimeInfo(NamedTuple):
     name: str
     version: str
     context: Path
+    port: int | None = None  # Custom port from EXPOSE directive
 
 
 @lru_cache()
@@ -45,6 +46,41 @@ def get_runtime_version(runtime_path: Path) -> str:
     return "latest"
 
 
+def get_exposed_ports(runtime_path: Path) -> list[int]:
+    """Extract EXPOSE ports from a Dockerfile.
+    
+    Args:
+        runtime_path: Path to the runtime directory containing Dockerfile
+        
+    Returns:
+        List of exposed port numbers, empty list if none found
+    """
+    dockerfile_path = runtime_path / "Dockerfile"
+    if not dockerfile_path.is_file():
+        return []
+    
+    exposed_ports = []
+    with dockerfile_path.open("r") as df:
+        for line in df:
+            line = line.strip()
+            if line.startswith("EXPOSE"):
+                # Handle EXPOSE directive: EXPOSE 8080 or EXPOSE 8080/tcp
+                parts = line.split()
+                for part in parts[1:]:  # Skip "EXPOSE" keyword
+                    # Remove protocol suffix if present (e.g., "8080/tcp" -> "8080")
+                    port_str = part.split("/")[0]
+                    try:
+                        port = int(port_str)
+                        exposed_ports.append(port)
+                    except ValueError:
+                        logger.warning("Invalid port in EXPOSE directive: %s", part)
+    
+    if exposed_ports:
+        logger.info("Found exposed ports in %s: %s", dockerfile_path, exposed_ports)
+    
+    return exposed_ports
+
+
 def detect_default_runtime(subdomain_path: Path) -> RuntimeInfo:
     """Detect the default runtime environment based on common files."""
     if (subdomain_path / "index.php").is_file():
@@ -70,8 +106,16 @@ def detect_runtime(subdomain_path: Path) -> RuntimeInfo:
         logger.warning("No Dockerfile found in %s, using default runtime", runtime_path)
         return detect_default_runtime(subdomain_path)
 
+    # Extract exposed ports from custom Dockerfile
+    exposed_ports = get_exposed_ports(runtime_path)
+    custom_port = exposed_ports[0] if exposed_ports else None
+    
+    if custom_port:
+        logger.info("Using custom port %d for %s", custom_port, subdomain_path.name)
+
     return RuntimeInfo(
         name=f"{subdomain_path.name}",
         version=get_runtime_version(runtime_path),
         context=runtime_path,
+        port=custom_port,
     )

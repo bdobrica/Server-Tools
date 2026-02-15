@@ -36,6 +36,11 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        {% if site.runtime.port %}
+        # Custom runtime with exposed port - using HTTP
+        proxy_pass http://{{ IP_PREFIX }}.{{ site.ip_suffix }}:{{ site.runtime.port }};
+        {% else %}
+        # Standard runtime - using HTTPS with client certificate authentication
         proxy_pass https://{{ IP_PREFIX }}.{{ site.ip_suffix }};
 
         proxy_ssl_certificate         {{ PROXY_SSL_PATH }}/{{ site.domain }}/{{ site.name }}/client.crt;
@@ -48,5 +53,6 @@ server {
         proxy_ssl_verify        on;
         proxy_ssl_verify_depth  2;
         proxy_ssl_session_reuse on;
+        {% endif %}
     }
 }
