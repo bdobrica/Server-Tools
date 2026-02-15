@@ -14,7 +14,7 @@ flowchart TB
     PY["Python<br/>App"]
     NODE["Node.js<br/>App<br/>(Auto-detected Containers)"]
 
-    DB["MariaDB<br/>(Native or Docker)<br/>- Shared DB<br/>- Unix Socket"]
+    DB["Database<br/>(MariaDB or PostgreSQL)<br/>(Native or Docker)<br/>- Shared DB<br/>- Unix Socket"]
 
     Internet --> Nginx
 
@@ -35,7 +35,7 @@ Site-builder automatically detects and configures different application types ba
 /mnt/www/
 ├── example.com/
 |   ├── .cert/                  # Storage for example.com's SSL certificates
-│   │   ├── www.example.com.pem # Server certificate for www.example.com
+│   │   ├── www.example.com.crt # Server certificate for www.example.com
 │   │   └── www.example.com.key # Private key for www.example.com
 │   ├── example.com/            # Main website (www.example.com)
 │   │   └── index.php           # PHP app (auto-detected)
@@ -97,7 +97,10 @@ Server-Tools/
 │       ├── pkgs/                   # Package management
 │       ├── resources/              # Docker image definitions
 │       │   ├── lighttpd-php8/      # Lighttpd + PHP 8 container
-│       │   └── nginx-php8/         # Nginx + PHP 8 container
+│       │   ├── nginx-hdnd-php8/    # Nginx + PHP 8 + HTML/CSS/JS container
+│       │   ├── nginx-njs24/        # Nginx + Node.js 24 container
+│       │   ├── nginx-php8/         # Nginx + PHP 8 container
+│       │   └── nginx-py312/        # Nginx + Python 3.12 container
 │       ├── ssl_certificate_manager/# SSL certificate handling
 │       └── templates/              # Jinja2 configuration templates
 └── test/                           # Testing environment
@@ -111,7 +114,7 @@ Server-Tools/
 ### Prerequisites
 
 - Debian or RedHat-based Linux distribution
-- Python 3.7+
+- Python 3.8+
 - Docker (if using containerized components)
 - Root or sudo access
 
@@ -347,6 +350,7 @@ The tool uses Jinja2 templates for configuration generation:
 - `nginx.conf.tpl`: Nginx virtual host template
 - `docker-compose.yml.tpl`: Docker compose template
 - `my.cnf.tpl`: MariaDB configuration template
+- `postgresql.conf.tpl`: PostgreSQL configuration template
 
 ### Site Discovery & Runtime Detection
 
@@ -372,7 +376,7 @@ The system automatically discovers websites by scanning the `/mnt/www/` director
 4. **Certificate Signing**: Signs certificates with internal CA
 5. **Auto-Renewal**: Monitors and renews expiring certificates
 6. **Certificate Placement**: Stores certificates in site-specific `.cert/` directories:
-   - `<subdomain>.pem` - Server certificate
+   - `<subdomain>.crt` - Server certificate
    - `<subdomain>.key` - Private key  
 
 ## 🛠️ Development

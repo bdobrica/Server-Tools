@@ -11,7 +11,7 @@ services:
                 ipv4_address: {{ IP_PREFIX }}.1
         volumes:
             - type: bind
-              source: "/etc/site-builder/nginx/sites-enabled"
+              source: "{{ NGINX_SITES_ENABLED_PATH }}"
               target: "/etc/nginx/conf.d"
               read_only: true
             - type: bind
@@ -19,7 +19,7 @@ services:
               target: "/var/ssl"
               read_only: true
             - type: bind
-              source: "/mnt/www"
+              source: "{{ WEB_PATH }}"
               target: "/var/www"
               read_only: true
         restart: unless-stopped
@@ -41,14 +41,14 @@ services:
                 ipv4_address: {{ IP_PREFIX }}.254
         volumes:
             - type: bind
-              source: "/etc/site-builder/mysql/my.cnf"
+              source: "{{ MYSQL_CONFIG_PATH }}/my.cnf"
               target: "/etc/mysql/my.cnf"
               read_only: true
             - type: bind
-              source: "/etc/site-builder/mysql/data"
+              source: "{{ MYSQL_CONFIG_PATH }}/data"
               target: "/var/lib/mysql"
             - type: bind
-              source: "/etc/site-builder/mysql/logs"
+              source: "{{ MYSQL_CONFIG_PATH }}/logs"
               target: "/var/log/mysql"
             - type: bind
               source: "/var/run/mysqld"
@@ -70,14 +70,14 @@ services:
                 ipv4_address: {{ IP_PREFIX }}.253
         volumes:
             - type: bind
-              source: "/etc/site-builder/postgres/postgresql.conf"
+              source: "{{ POSTGRES_CONFIG_PATH }}/postgresql.conf"
               target: "/etc/postgresql/postgresql.conf"
               read_only: true
             - type: bind
-              source: "/etc/site-builder/postgres/data"
+              source: "{{ POSTGRES_CONFIG_PATH }}/data"
               target: "/var/lib/postgresql/data"
             - type: bind
-              source: "/etc/site-builder/postgres/logs"
+              source: "{{ POSTGRES_CONFIG_PATH }}/logs"
               target: "/var/log/postgresql"
         ports:
             - "5432:5432"
@@ -105,10 +105,15 @@ services:
             - type: bind
               source: "{{ site.web_root }}"
               target: "/var/www"
-{% if not ENABLE_DATABASE %}
+{% if MYSQL_MODE == "native" %}
             - type: bind
               source: "/var/run/mysqld/mysqld.sock"
               target: "/var/run/mysqld/mysqld.sock"
+{% endif %}
+{% if POSTGRES_MODE == "native" %}
+            - type: bind
+              source: "/var/run/postgresql"
+              target: "/var/run/postgresql"
 {% endif %}
 {% if ENABLE_MYSQL_DATABASE or ENABLE_POSTGRES_DATABASE %}
         depends_on:
