@@ -4,27 +4,36 @@ A comprehensive bare-metal server configuration package for setting up isolated 
 
 ## 🏗️ Architecture Overview
 
-```
+```mermaid
 flowchart TB
     Internet[Internet]
 
     Nginx["Nginx Proxy<br/>(Native or Docker)<br/>- SSL/TLS<br/>- Load Balance"]
 
+    Split["(Auto-detected Containers)"]
+
     PHP["PHP App<br/>Docker"]
     PY["Python<br/>App"]
-    NODE["Node.js<br/>App<br/>(Auto-detected Containers)"]
+    NODE["Node.js<br/>App"]
+    CUSTOM["Dockerfile<br>App"]
 
-    DB["Database<br/>(MariaDB or PostgreSQL)<br/>(Native or Docker)<br/>- Shared DB<br/>- Unix Socket"]
+    DB["MariaDB<br/>(Native or Docker)<br/>- Shared DB<br/>- Unix Socket"]
 
     Internet --> Nginx
+    Nginx -->|"Self-signed SSL"| Split
 
-    Nginx -->|"Self-signed SSL"| PHP
-    Nginx -->|"Self-signed SSL"| PY
-    Nginx -->|"Self-signed SSL"| NODE
+    Split --> PHP
+    Split --> PY
+    Split --> NODE
+    Split --> CUSTOM
 
     PHP --> DB
     PY --> DB
     NODE --> DB
+    CUSTOM --> DB
+
+    %% Make the split label look like plain text
+    style Split fill:transparent,stroke:transparent,color:#666,font-style:italic
 ```
 
 ## 📂 Directory Structure & App Detection
