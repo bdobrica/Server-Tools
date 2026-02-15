@@ -11,9 +11,6 @@ from ..pkgs import PKGsManager
 logger = logging.getLogger(__name__)
 
 
-logger = logging.getLogger(__name__)
-
-
 class DockerManager:
     def __init__(self):
         self._has_docker = shutil.which("docker") is not None
@@ -44,7 +41,7 @@ class DockerManager:
 
     def _setup_debian(self, pkgs_manager: PKGsManager) -> None:
         """Set up Docker on Debian-based systems."""
-        self.logger.info("Installing Docker using official Debian repository...")
+        logger.info("Installing Docker using official Debian repository...")
 
         # Install prerequisites
         pkgs_manager.install(["ca-certificates", "curl"])
@@ -52,7 +49,7 @@ class DockerManager:
         # Download and set up Docker's GPG key
         response = requests.get("https://download.docker.com/linux/debian/gpg", timeout=10)
         response.raise_for_status()
-        self.logger.info("Downloaded Docker GPG key")
+        logger.info("Downloaded Docker GPG key")
 
         gpg_key_path = "/etc/apt/keyrings/docker.asc"
         pkgs_manager.setup_apt_gpg_key(response.content, gpg_key_path)
@@ -94,11 +91,11 @@ class DockerManager:
         subprocess.run(["systemctl", "enable", "docker"], check=True)
         subprocess.run(["systemctl", "start", "docker"], check=True)
 
-        self.logger.info("Docker installed and started successfully")
+        logger.info("Docker installed and started successfully")
 
     def _setup_redhat(self, pkgs_manager: PKGsManager) -> None:
         """Set up Docker on RedHat-based systems (CentOS, RHEL, Fedora)."""
-        self.logger.info("Installing Docker using official RedHat repository...")
+        logger.info("Installing Docker using official RedHat repository...")
 
         # Install DNF plugins core (required for adding repositories)
         pkgs_manager.install(["dnf-plugins-core"])
@@ -116,4 +113,4 @@ class DockerManager:
         subprocess.run(["systemctl", "enable", "docker"], check=True)
         subprocess.run(["systemctl", "start", "docker"], check=True)
 
-        self.logger.info("Docker installed and started successfully")
+        logger.info("Docker installed and started successfully")

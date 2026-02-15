@@ -136,7 +136,7 @@ class NginxDockerManager(NginxManager):
             config = config_generator.render_nginx_config(site, site_template_vars)
             fp.write(config)
 
-        self.logger.info("Generated nginx config for %s", site["name"])
+        logger.info("Generated nginx config for %s", site["name"])
 
     def generate_main_config(self, sites: List[Dict[str, Any]], config_generator) -> None:
         """Generate main Nginx configuration and update docker-compose.yml.
