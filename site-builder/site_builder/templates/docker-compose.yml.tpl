@@ -78,13 +78,14 @@ services:
             - type: bind
               source: "{{ site.web_root }}"
               target: "/var/www"
-{% if ENABLE_DATABASE %}
-        depends_on:
-            - mariadb
-{% else %}
+{% if not ENABLE_DATABASE %}
             - type: bind
               source: "/var/run/mysqld/mysqld.sock"
               target: "/var/run/mysqld/mysqld.sock"
+{% endif %}
+{% if ENABLE_DATABASE %}
+        depends_on:
+            - mariadb
 {% endif %}
         restart: unless-stopped
 {% endfor %}

@@ -49,12 +49,16 @@ def _create_mysql_manager(
     if args.mysql_mode == "none":
         return None
 
+    # Create a copy of template_vars with DB_MODE set for MySQL templates
+    mysql_template_vars = template_vars.copy()
+    mysql_template_vars["DB_MODE"] = args.mysql_mode
+
     if args.mysql_mode == "docker":
         # Use the docker-compose directory as parent for database configs
         mysql_config_path = args.docker_compose_path.parent / "mysql"
         return MariaDBDockerManager(
             config_path=mysql_config_path,
-            template_vars=template_vars,
+            template_vars=mysql_template_vars,
             docker_compose_path=args.docker_compose_path,
             root_password=args.mysql_root_password,
         )
@@ -62,7 +66,7 @@ def _create_mysql_manager(
         mysql_config_path = args.site_builder_config_path / "mysql"
         return MariaDBNativeManager(
             config_path=mysql_config_path,  # For storing password file
-            template_vars=template_vars,
+            template_vars=mysql_template_vars,
             mysql_config_path=args.mysql_config_path,
             root_password=args.mysql_root_password,
         )
@@ -77,12 +81,16 @@ def _create_postgres_manager(
     if args.postgres_mode == "none":
         return None
 
+    # Create a copy of template_vars with DB_MODE set for PostgreSQL templates
+    postgres_template_vars = template_vars.copy()
+    postgres_template_vars["DB_MODE"] = args.postgres_mode
+
     if args.postgres_mode == "docker":
         # Use the docker-compose directory as parent for database configs
         postgres_config_path = args.docker_compose_path.parent / "postgres"
         return PostgreSQLDockerManager(
             config_path=postgres_config_path,
-            template_vars=template_vars,
+            template_vars=postgres_template_vars,
             docker_compose_path=args.docker_compose_path,
             root_password=args.postgres_root_password,
         )
@@ -90,7 +98,7 @@ def _create_postgres_manager(
         postgres_config_path = args.site_builder_config_path / "postgres"
         return PostgreSQLNativeManager(
             config_path=postgres_config_path,  # For storing password file
-            template_vars=template_vars,
+            template_vars=postgres_template_vars,
             postgres_config_path=args.postgres_config_path,
             root_password=args.postgres_root_password,
         )

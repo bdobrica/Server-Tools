@@ -57,4 +57,7 @@ site_builder = [
     "templates/*",
     "resources/lighttpd-php8/*",
     "resources/nginx-php8/*",
+    "resources/nginx-py312/*",
+    "resources/nginx-njs24/*",
+    "resources/nginx-hdnd-php8/*",
 ]

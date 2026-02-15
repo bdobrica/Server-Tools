@@ -5,30 +5,26 @@ A comprehensive bare-metal server configuration package for setting up isolated 
 ## 🏗️ Architecture Overview
 
 ```
-┌──────────────────────────────────────────┐
-│                 Internet                 │
-└─────────────────────┬────────────────────┘
-                      │
-              ┌───────▼────────┐
-              │ Nginx Proxy    │ (Native or Docker)
-              │ - SSL/TLS      │
-              │ - Load Balance │
-              └───────┬────────┘
-                      │ Self-signed SSL
-        ┌─────────────┼─────────────┐
-        │             │             │
-   ┌────▼────┐   ┌────▼────┐   ┌────▼────┐
-   │ PHP App │   │Python   │   │Node.js  │ (Auto-detected Containers)
-   │ Docker  │   │ App     │   │ App     │
-   └────┬────┘   └────┬────┘   └────┬────┘
-        │             │             │
-        └─────────────┼─────────────┘
-                      │
-              ┌───────▼────────┐
-              │ MariaDB        │ (Native or Docker)
-              │ - Shared DB    │
-              │ - Unix Socket  │
-              └────────────────┘
+flowchart TB
+    Internet[Internet]
+
+    Nginx["Nginx Proxy<br/>(Native or Docker)<br/>- SSL/TLS<br/>- Load Balance"]
+
+    PHP["PHP App<br/>Docker"]
+    PY["Python<br/>App"]
+    NODE["Node.js<br/>App<br/>(Auto-detected Containers)"]
+
+    DB["MariaDB<br/>(Native or Docker)<br/>- Shared DB<br/>- Unix Socket"]
+
+    Internet --> Nginx
+
+    Nginx -->|"Self-signed SSL"| PHP
+    Nginx -->|"Self-signed SSL"| PY
+    Nginx -->|"Self-signed SSL"| NODE
+
+    PHP --> DB
+    PY --> DB
+    NODE --> DB
 ```
 
 ## 📂 Directory Structure & App Detection
@@ -38,27 +34,26 @@ Site-builder automatically detects and configures different application types ba
 ```
 /mnt/www/
 ├── example.com/
-│   ├── www/                    # Main website (www.example.com)
-│   │   ├── index.php          # PHP app (auto-detected)
-│   │   ├── .cert/             # SSL certificates
-│   │   │   ├── server.pem     # Server certificate
-│   │   │   └── server.key     # Private key
-│   │   └── .runtime/          # Optional: Custom runtime
-│   │       └── Dockerfile     # Custom container definition
-│   ├── api/                   # API subdomain (api.example.com)
-│   │   ├── index.py           # Python app (auto-detected)
-│   │   ├── requirements.txt   # Python dependencies
-│   │   ├── .venv/             # Virtual environment (persistent)
-│   │   └── .cert/             # SSL certificates
-│   └── app/                   # Application subdomain (app.example.com)
-│       ├── index.ts           # Node.js/TypeScript app (auto-detected)
-│       ├── package.json       # Node.js dependencies
-│       ├── .node_modules/     # Dependencies (persistent)
-│       └── .cert/             # SSL certificates
+|   ├── .cert/                  # Storage for example.com's SSL certificates
+│   │   ├── www.example.com.pem # Server certificate for www.example.com
+│   │   └── www.example.com.key # Private key for www.example.com
+│   ├── example.com/            # Main website (www.example.com)
+│   │   └── index.php           # PHP app (auto-detected)
+│   ├── api.example.com/        # API subdomain (api.example.com)
+│   │   ├── index.py            # Python app (auto-detected)
+│   │   ├── requirements.txt    # Python dependencies
+│   │   └── .venv/              # Virtual environment (persistent)
+│   ├── app.example.com/        # Application subdomain (app.example.com)
+│   │   ├── index.ts            # Node.js/TypeScript app (auto-detected)
+│   │   ├── package.json        # Node.js dependencies
+│   │   └── .node_modules/      # Dependencies (persistent)
+│   └── any.example.com/        # Arbitrary application subdomain
+│       └── .runtime/           # Custom runtime
+│           └── Dockerfile      # Custom container definition
 └── another-site.com/
-    └── www/
-        ├── index.php          # Another PHP application
-        └── .cert/
+    ├── .cert/                  # Storage for another-site.com's SSL certificates
+    └── www.another-site.com/
+        └── index.php           # Another PHP application
 ```
 
 ### 🔍 Automatic App Detection
@@ -372,8 +367,8 @@ The system automatically discovers websites by scanning the `/mnt/www/` director
 4. **Certificate Signing**: Signs certificates with internal CA
 5. **Auto-Renewal**: Monitors and renews expiring certificates
 6. **Certificate Placement**: Stores certificates in site-specific `.cert/` directories:
-   - `server.pem` - Server certificate
-   - `server.key` - Private key  
+   - `<subdomain>.pem` - Server certificate
+   - `<subdomain>.key` - Private key  
 
 ## 🛠️ Development
 

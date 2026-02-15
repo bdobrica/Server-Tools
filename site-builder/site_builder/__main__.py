@@ -258,6 +258,9 @@ def main():
         "POSTGRES_ROOT_PASSWORD": args.postgres_root_password or "generated_password_placeholder",
         "ENABLE_POSTGRES_DATABASE": True if args.postgres_mode == "docker" else False,
         "ENABLE_PROXY": True if args.nginx_mode == "docker" else False,
+        # Variables for docker-compose template compatibility
+        "ENABLE_DATABASE": args.mysql_mode == "docker" or args.postgres_mode == "docker",
+        "DB_ROOT_PASSWORD": args.mysql_root_password or args.postgres_root_password or "generated_password_placeholder",
     }
 
     # Initialize managers using factory functions

@@ -106,10 +106,7 @@ class MariaDBNativeManager(DatabaseManager):
         if not self._is_installed():
             self._install()
 
-        # Generate default configuration if it doesn't exist
-        if not self.config_file.exists():
-            raise FileNotFoundError(f"MariaDB configuration file not found: {self.config_file}")
-
+        # Configuration will be generated later by generate_config()
         logger.info("Native MariaDB manager setup complete")
 
     def start(self) -> None:
