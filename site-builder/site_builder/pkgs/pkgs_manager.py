@@ -8,9 +8,6 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
-logger = logging.getLogger(__name__)
-
-
 class PKGsManager:
     def __init__(self):
         self.is_debian_based = shutil.which("apt-get") is not None
