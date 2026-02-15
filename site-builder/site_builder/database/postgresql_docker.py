@@ -121,22 +121,6 @@ class PostgreSQLDockerManager(DatabaseManager):
 
         # Configuration will be generated later by generate_config()
         logger.info("Docker-based PostgreSQL manager setup complete")
-            docker_manager = DockerManager()
-            docker_manager.setup()
-
-        # Generate default configuration if it doesn't exist
-        if not self.config_file.exists():
-            # Try to copy from host system if available
-            host_config = self.postgres_host_config_path / "postgresql.conf"
-            if host_config.exists():
-                import shutil
-
-                shutil.copy2(host_config, self.config_file)
-                logger.info("Copied PostgreSQL configuration from host: %s", host_config)
-            else:
-                logger.warning("PostgreSQL configuration file not found: %s", self.config_file)
-
-        logger.info("Docker-based PostgreSQL manager setup complete")
 
     def start(self) -> None:
         """Start the PostgreSQL Docker service."""
