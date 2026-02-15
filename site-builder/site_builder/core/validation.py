@@ -165,8 +165,8 @@ def get_ca_password(args: Any) -> str:
             fp.write(password)
         # Set restrictive permissions (read/write for owner only)
         password_file.chmod(0o600)
-        logger.info(f"Generated new CA password and saved to {password_file}")
+        logger.info("Generated new CA password and saved to %s", password_file)
         return password
     except Exception as err:
-        logger.error(f"Failed to write CA password to {password_file}: {err}")
+        logger.error("Failed to write CA password to %s: %s", password_file, err)
         sys.exit(1)

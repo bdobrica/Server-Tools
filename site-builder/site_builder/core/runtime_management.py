@@ -16,7 +16,7 @@ def get_default_runtime(app_type: str = "php") -> Dict[str, Any]:
     }.get(app_type, "nginx-php8")
 
     runtimes_path = Path(__file__).parent.parent.resolve() / "resources"
-    logger.info(f"Using default runtime from {runtimes_path / container_name}")
+    logger.info("Using default runtime from %s", runtimes_path / container_name)
     return {
         "name": container_name,
         "version": "latest",
@@ -34,7 +34,7 @@ def get_runtime_version(runtime_path: Path) -> str:
         for line in df:
             if line.startswith("ENV RUNTIME_VERSION="):
                 return line.strip().split("=")[1]
-    logger.warning(f"RUNTIME_VERSION not found in Dockerfile at: {dockerfile_path}")
+    logger.warning("RUNTIME_VERSION not found in Dockerfile at: %s", dockerfile_path)
     return "latest"
 
 
@@ -47,7 +47,7 @@ def detect_default_runtime(subdomain_path: Path) -> Dict[str, Any]:
     elif (subdomain_path / "index.ts").is_file():
         return get_default_runtime("nodejs")
     else:
-        logger.info(f"No specific runtime files found in {subdomain_path}, using PHP as default")
+        logger.info("No specific runtime files found in %s, using PHP as default", subdomain_path)
         return get_default_runtime("php")
 
 
@@ -56,11 +56,11 @@ def detect_runtime(subdomain_path: Path) -> Dict[str, Any]:
 
     runtime_path = subdomain_path / ".runtime"
     if not runtime_path.is_dir():
-        logger.info(f"No .runtime directory found in {subdomain_path}, using default runtime")
+        logger.info("No .runtime directory found in %s, using default runtime", subdomain_path)
         return detect_default_runtime(subdomain_path)
 
     if not (runtime_path / "Dockerfile").is_file():
-        logger.warning(f"No Dockerfile found in {runtime_path}, using default runtime")
+        logger.warning("No Dockerfile found in %s, using default runtime", runtime_path)
         return detect_default_runtime(subdomain_path)
 
     runtime = {

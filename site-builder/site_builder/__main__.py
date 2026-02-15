@@ -309,7 +309,7 @@ def main():
     try:
         args.docker_compose_path.parent.mkdir(parents=True, exist_ok=True)
     except Exception as e:
-        logger.error(f"Failed to create directory for docker-compose file: {e}")
+        logger.error("Failed to create directory for docker-compose file: %s", e)
         return
 
     try:
@@ -317,7 +317,7 @@ def main():
             fp.write(docker_compose_config)
         logger.info("Updated docker-compose.yml with nginx service")
     except Exception as e:
-        logger.error(f"Failed to write docker-compose file: {e}")
+        logger.error("Failed to write docker-compose file: %s", e)
         return
 
     # Generate main configuration (docker-compose for docker mode)

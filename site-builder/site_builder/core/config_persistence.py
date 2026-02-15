@@ -18,9 +18,9 @@ def load_config(config_path: Path) -> Dict[str, Any]:
 
     if config_file.exists():
         config.read(config_file)
-        logger.info(f"Loaded configuration from {config_file}")
+        logger.info("Loaded configuration from %s", config_file)
     else:
-        logger.info(f"No configuration file found at {config_file}, using defaults")
+        logger.info("No configuration file found at %s, using defaults", config_file)
 
     # Convert config to dictionary with proper type conversion
     config_dict = {}
@@ -213,6 +213,6 @@ def save_config(config_path: Path, args: argparse.Namespace) -> None:
             config.write(f)
         # Set restrictive permissions (read/write for owner only) since config contains passwords
         config_file.chmod(0o600)
-        logger.info(f"Saved configuration to {config_file}")
+        logger.info("Saved configuration to %s", config_file)
     except Exception as e:
-        logger.error(f"Failed to save configuration to {config_file}: {e}")
+        logger.error("Failed to save configuration to %s: %s", config_file, e)

@@ -79,8 +79,8 @@ class SSLCertificateManager:
             .issuer_name(issuer)
             .public_key(ca_key.public_key())
             .serial_number(x509.random_serial_number())
-            .not_valid_before(datetime.utcnow())
-            .not_valid_after(datetime.utcnow() + timedelta(days=3650))  # 10 years validity
+            .not_valid_before(datetime.now(timezone.utc))
+            .not_valid_after(datetime.now(timezone.utc) + timedelta(days=3650))  # 10 years validity
             .add_extension(
                 x509.BasicConstraints(ca=True, path_length=None),
                 critical=True,
@@ -153,8 +153,8 @@ class SSLCertificateManager:
             .issuer_name(ca_cert.subject)
             .public_key(csr.public_key())
             .serial_number(x509.random_serial_number())
-            .not_valid_before(datetime.utcnow())
-            .not_valid_after(datetime.utcnow() + timedelta(days=365))
+            .not_valid_before(datetime.now(timezone.utc))
+            .not_valid_after(datetime.now(timezone.utc) + timedelta(days=365))
             .add_extension(
                 x509.SubjectAlternativeName(
                     [
@@ -166,7 +166,7 @@ class SSLCertificateManager:
             )
             .add_extension(
                 x509.KeyUsage(
-                    key_encipherment=True,
+                    key_encipherment=False,  # Ed25519 keys do not support key encipherment
                     digital_signature=True,
                     content_commitment=False,
                     key_agreement=False,
