@@ -58,13 +58,13 @@ class PKGsManager:
             repo_name = "custom"
 
         sources_list_path = f"/etc/apt/sources.list.d/{repo_name}.list"
-        self.logger.info("Adding APT repository to %s", sources_list_path)
+        logger.info("Adding APT repository to %s", sources_list_path)
 
         subprocess.run(["tee", sources_list_path], input=repo_line, text=True, check=True, stdout=subprocess.DEVNULL)
 
     def _add_dnf_repository(self, repo_url: str) -> None:
         """Add a DNF repository on RedHat-based systems."""
-        self.logger.info("Adding DNF repository: %s", repo_url)
+        logger.info("Adding DNF repository: %s", repo_url)
         subprocess.run(["dnf", "config-manager", "--add-repo", repo_url], check=True)
 
     def setup_apt_gpg_key(self, gpg_key_content: bytes, key_path: str) -> None:
@@ -82,4 +82,4 @@ class PKGsManager:
         # Set proper permissions
         subprocess.run(["chmod", "a+r", key_path], check=True)
 
-        self.logger.info("GPG key installed at %s", key_path)
+        logger.info("GPG key installed at %s", key_path)

@@ -209,6 +209,8 @@ site_builder/
 │   └── nginx_native.py     # Nginx native manager
 └── resources/              # Docker images and templates
     ├── lighttpd-php8/      # Lightweight web server with PHP 8
+    ├── nginx-hdnd-php8/    # Nginx + PHP 8 + HTML/CSS/JS container
+    ├── nginx-njs24/        # Nginx + Node.js 24 container
     ├── nginx-php8/         # Nginx web server with PHP 8
     └── nginx-py312/        # Nginx with Python 3.12
 ```
@@ -216,6 +218,8 @@ site_builder/
 ### Docker Images
 The package includes pre-configured Docker images:
 - `lighttpd-php8`: Lightweight web server with PHP 8
+- `nginx-hdnd-php8`: Nginx + PHP 8 + HTML/CSS/JS container
+- `nginx-njs24`: Nginx + Node.js 24 container
 - `nginx-php8`: Nginx web server with PHP 8  
 - `nginx-py312`: Nginx with Python 3.12 support
 
@@ -224,9 +228,8 @@ These are automatically included as package resources and used in generated Dock
 ### Testing
 ```bash
 # Run the included test files
-python test_postgresql_simple.py
-python test_postgresql_support.py
-python test_postgresql.py
+python test_postgres_config_detection.py
+python test_postgres_mock.py
 ```
 
 ## Recent Improvements
