@@ -116,15 +116,13 @@ class PostgreSQLNativeManager(DatabaseManager):
     def _set_postgres_password(self) -> None:
         """Set the postgres user password."""
         try:
-            # Set password for postgres user using sudo to assume postgres OS user
+            # Set password for postgres user using su to assume postgres OS user
             # PostgreSQL typically uses peer authentication for the postgres user
             cmd = [
-                "sudo",
-                "-u",
+                "su",
                 "postgres",
-                "psql",
                 "-c",
-                f"ALTER USER postgres PASSWORD '{self.root_password}';",
+                f"psql -c \"ALTER USER postgres PASSWORD '{self.root_password}';\"",
             ]
             subprocess.run(cmd, check=True)
 
