@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "site-builder"
-version = "1.0.1"
+dynamic = ["version"]
 description = "Generate Nginx and Docker configurations for web services"
 readme = "README.md"
 license = {text = "MIT"}
@@ -51,6 +51,9 @@ Issues = "https://github.com/bdobrica/Server-Tools/issues"
 
 [tool.setuptools]
 packages = ["site_builder", "site_builder.config_generator", "site_builder.core", "site_builder.database", "site_builder.docker", "site_builder.nginx", "site_builder.pkgs", "site_builder.ssl_certificate_manager"]
+
+[tool.setuptools.dynamic]
+version = {attr = "site_builder.__version__"}
 
 [tool.setuptools.package-data]
 site_builder = [

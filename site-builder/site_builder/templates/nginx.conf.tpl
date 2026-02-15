@@ -8,8 +8,9 @@ server {
 
 server {
     {% if site.use_ssl %}
-    listen [::]:443 ssl http2;
-    listen 443 ssl http2;
+    listen [::]:443 ssl;
+    listen 443 ssl;
+    http2 on;
     {% else %}
     listen 80;
     listen [::]:80;

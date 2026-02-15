@@ -2,15 +2,7 @@
 
 from typing import Any
 
-try:
-    from ..ssl_certificate_manager import SSLCertificateManager
-except ImportError:
-    # Fallback for direct execution
-    import sys
-    from pathlib import Path
-
-    sys.path.append(str(Path(__file__).parent.parent))
-    from ssl_certificate_manager import SSLCertificateManager
+from ..ssl_certificate_manager import SSLCertificateManager
 
 
 def create_ssl_manager(args: Any, ca_password: str) -> SSLCertificateManager:

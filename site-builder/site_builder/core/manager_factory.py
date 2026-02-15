@@ -3,26 +3,13 @@
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
-try:
-    from ..database import (
-        MariaDBDockerManager,
-        MariaDBNativeManager,
-        PostgreSQLDockerManager,
-        PostgreSQLNativeManager,
-    )
-    from ..nginx import NginxDockerManager, NginxNativeManager
-except ImportError:
-    # Fallback for direct execution
-    import sys
-
-    sys.path.append(str(Path(__file__).parent.parent))
-    from database import (
-        MariaDBDockerManager,
-        MariaDBNativeManager,
-        PostgreSQLDockerManager,
-        PostgreSQLNativeManager,
-    )
-    from nginx import NginxDockerManager, NginxNativeManager
+from ..database import (
+    MariaDBDockerManager,
+    MariaDBNativeManager,
+    PostgreSQLDockerManager,
+    PostgreSQLNativeManager,
+)
+from ..nginx import NginxDockerManager, NginxNativeManager
 
 
 def create_nginx_manager(args: Any, template_vars: Dict[str, Any]) -> Union[NginxDockerManager, NginxNativeManager]:
