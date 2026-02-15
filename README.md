@@ -160,7 +160,8 @@ site-builder --web-path /var/www
 # Use Docker for Nginx and database components
 site-builder \
     --nginx-mode docker \
-    --database-mode docker
+    --mysql-mode docker \
+    --postgres-mode docker
 
 # Force SSL certificate renewal for all sites
 site-builder --renew-crts
@@ -202,9 +203,12 @@ site-builder
 |-----------|------|-------------|
 | **Nginx** | `native` | System-installed Nginx (default) |
 |           | `docker` | Nginx in Docker container |
-| **Database** | `native` | System-installed MariaDB (default) |
-|              | `docker` | MariaDB in Docker container |
-|              | `none` | No database configuration |
+| **MariaDB** | `native` | System-installed MariaDB (default) |
+|             | `docker` | MariaDB in Docker container |
+|             | `none` | No MariaDB configuration |
+| **PostgreSQL** | `native` | System-installed PostgreSQL |
+|                | `docker` | PostgreSQL in Docker container |
+|                | `none` | No PostgreSQL configuration (default) |
 
 ### SSL Certificate Management
 
@@ -304,7 +308,8 @@ docker build -t lighttpd-php8 .
 --nginx-config-path PATH     # Nginx sites-available path
 --docker-compose-path PATH   # Docker compose file location
 --nginx-mode MODE           # nginx deployment: native|docker
---database-mode MODE        # database: native|docker|none
+--mysql-mode MODE           # MySQL/MariaDB: native|docker|none
+--postgres-mode MODE        # PostgreSQL: native|docker|none
 ```
 
 ### SSL Certificate Options

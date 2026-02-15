@@ -113,6 +113,34 @@ def validate_privileges(privileges: str) -> str:
     return ', '.join(priv_list)
 
 
+def validate_password(password: str) -> str:
+    """
+    Validate database password to prevent SQL injection.
+    
+    Rejects passwords containing single quotes which could break SQL syntax
+    or be exploited for SQL injection when interpolated into SQL strings.
+    
+    Args:
+        password: Password to validate
+        
+    Returns:
+        The validated password
+        
+    Raises:
+        ValueError: If password contains invalid characters
+    """
+    if not password:
+        raise ValueError("Password cannot be empty")
+    
+    if "'" in password:
+        raise ValueError("Password cannot contain single quotes (') due to SQL injection risk")
+    
+    if len(password) > 255:
+        raise ValueError("Password too long (max 255 characters)")
+    
+    return password
+
+
 def validate_paths(args: Any) -> None:
     """Validate required paths exist."""
     if not args.root_ca_path.exists():

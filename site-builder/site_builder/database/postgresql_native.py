@@ -1,6 +1,7 @@
 """Native PostgreSQL service management."""
 
 import logging
+import os
 import secrets
 import shutil
 import string
@@ -9,7 +10,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from ..config_generator import ConfigGenerator
-from ..core.validation import validate_database_name, validate_privileges, validate_username
+from ..core.validation import validate_database_name, validate_password, validate_privileges, validate_username
 from ..pkgs import PKGsManager
 from .database_manager import DatabaseManager
 
@@ -204,7 +205,7 @@ class PostgreSQLNativeManager(DatabaseManager):
 
         # Fallback to checking postgres process
         try:
-            env = {"PGPASSWORD": self.root_password}
+            env = {**os.environ, "PGPASSWORD": self.root_password}
             result = subprocess.run(
                 ["psql", "-U", "postgres", "-c", "SELECT 1"], capture_output=True, text=True, env=env
             )
@@ -218,7 +219,7 @@ class PostgreSQLNativeManager(DatabaseManager):
         database_name = validate_database_name(database_name)
         
         try:
-            env = {"PGPASSWORD": self.root_password}
+            env = {**os.environ, "PGPASSWORD": self.root_password}
             cmd = [
                 "psql",
                 "-U",
@@ -237,14 +238,15 @@ class PostgreSQLNativeManager(DatabaseManager):
 
     def create_user(self, username: str, password: str, database_name: Optional[str] = None) -> None:
         """Create a new database user with optional database access."""
-        # Validate username to prevent SQL injection
+        # Validate inputs to prevent SQL injection
         username = validate_username(username)
+        password = validate_password(password)
         if database_name:
             database_name = validate_database_name(database_name)
         
         try:
-            # Create user
-            env = {"PGPASSWORD": self.root_password}
+            # Create user (merge with existing environment)
+            env = {**os.environ, "PGPASSWORD": self.root_password}
             cmd = [
                 "psql",
                 "-U",
@@ -271,7 +273,7 @@ class PostgreSQLNativeManager(DatabaseManager):
         privileges = validate_privileges(privileges)
         
         try:
-            env = {"PGPASSWORD": self.root_password}
+            env = {**os.environ, "PGPASSWORD": self.root_password}
             cmd = [
                 "psql",
                 "-U",
@@ -289,7 +291,7 @@ class PostgreSQLNativeManager(DatabaseManager):
         """Backup a database to a file."""
         try:
             backup_path.parent.mkdir(parents=True, exist_ok=True)
-            env = {"PGPASSWORD": self.root_password}
+            env = {**os.environ, "PGPASSWORD": self.root_password}
             cmd = [
                 "pg_dump",
                 "-U",
@@ -317,7 +319,7 @@ class PostgreSQLNativeManager(DatabaseManager):
             # Create database if it doesn't exist
             self.create_database(database_name)
 
-            env = {"PGPASSWORD": self.root_password}
+            env = {**os.environ, "PGPASSWORD": self.root_password}
             cmd = [
                 "pg_restore",
                 "-U",

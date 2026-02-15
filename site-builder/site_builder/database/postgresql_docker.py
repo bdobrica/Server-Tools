@@ -1,6 +1,7 @@
 """Docker-based PostgreSQL service management."""
 
 import logging
+import os
 import secrets
 import string
 import subprocess
@@ -8,7 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from ..config_generator import ConfigGenerator
-from ..core.validation import validate_database_name, validate_privileges, validate_username
+from ..core.validation import validate_database_name, validate_password, validate_privileges, validate_username
 from ..docker import DockerManager
 from .database_manager import DatabaseManager
 
@@ -197,8 +198,8 @@ class PostgreSQLDockerManager(DatabaseManager):
                 ),
             ]
 
-            # Set password environment variable
-            env = {"PGPASSWORD": self.root_password}
+            # Set password environment variable (merge with existing environment)
+            env = {**os.environ, "PGPASSWORD": self.root_password}
             subprocess.run(cmd, check=True, cwd=self.docker_compose_path.parent, env=env)
             logger.info("Created database: %s", database_name)
         except subprocess.CalledProcessError as e:
@@ -207,8 +208,9 @@ class PostgreSQLDockerManager(DatabaseManager):
 
     def create_user(self, username: str, password: str, database_name: Optional[str] = None) -> None:
         """Create a new database user with optional database access."""
-        # Validate username to prevent SQL injection
+        # Validate inputs to prevent SQL injection
         username = validate_username(username)
+        password = validate_password(password)
         if database_name:
             database_name = validate_database_name(database_name)
         
@@ -229,8 +231,8 @@ class PostgreSQLDockerManager(DatabaseManager):
                 f"CREATE USER \"{username}\" WITH PASSWORD '{password}';",
             ]
 
-            # Set password environment variable
-            env = {"PGPASSWORD": self.root_password}
+            # Set password environment variable (merge with existing environment)
+            env = {**os.environ, "PGPASSWORD": self.root_password}
             subprocess.run(cmd, check=True, cwd=self.docker_compose_path.parent, env=env)
 
             # Grant privileges if database specified
@@ -265,8 +267,8 @@ class PostgreSQLDockerManager(DatabaseManager):
                 f'GRANT {privileges} PRIVILEGES ON DATABASE "{database_name}" TO "{username}";',
             ]
 
-            # Set password environment variable
-            env = {"PGPASSWORD": self.root_password}
+            # Set password environment variable (merge with existing environment)
+            env = {**os.environ, "PGPASSWORD": self.root_password}
             subprocess.run(cmd, check=True, cwd=self.docker_compose_path.parent, env=env)
             logger.info("Granted %s privileges on %s to %s", privileges, database_name, username)
         except subprocess.CalledProcessError as e:
@@ -294,8 +296,8 @@ class PostgreSQLDockerManager(DatabaseManager):
                 database_name,
             ]
 
-            # Set password environment variable
-            env = {"PGPASSWORD": self.root_password}
+            # Set password environment variable (merge with existing environment)
+            env = {**os.environ, "PGPASSWORD": self.root_password}
             with backup_path.open("wb") as f:
                 subprocess.run(cmd, stdout=f, check=True, cwd=self.docker_compose_path.parent, env=env)
 
@@ -331,8 +333,8 @@ class PostgreSQLDockerManager(DatabaseManager):
                 "--if-exists",
             ]
 
-            # Set password environment variable
-            env = {"PGPASSWORD": self.root_password}
+            # Set password environment variable (merge with existing environment)
+            env = {**os.environ, "PGPASSWORD": self.root_password}
             with backup_path.open("rb") as f:
                 subprocess.run(cmd, stdin=f, check=True, cwd=self.docker_compose_path.parent, env=env)
 
