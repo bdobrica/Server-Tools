@@ -26,7 +26,7 @@ envsubst '$PHP_FPM_PORT $SSL_CERT $SSL_KEY $SSL_ROOT_CA' \
 
 # Start PHP-FPM (background)
 echo "Starting PHP-FPM..."
-php-fpm83 -D
+php-fpm84 -D
 
 # Start Nginx (foreground)
 echo "Starting Nginx..."

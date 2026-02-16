@@ -47,7 +47,7 @@ RUN sed -e "s/^upload_max_filesize = .\+$/upload_max_filesize = 64M/g" \
     -e "s/^memory_limit = .\+$/memory_limit = 256M/g" \
     -e "s/^zlib\.output_compression = .\+$/zlib.output_compression = On/g" \
     -e "s/^;zlib\.output_handler =.*$/zlib.output_handler = On/g" \
-    -i /etc/php83/php.ini
+    -i /etc/php84/php.ini
 
 RUN mkdir -p /etc/lighttpd/templates /run/lighttpd /var/www
 RUN chown -R www-data /var/www && update-ca-certificates
