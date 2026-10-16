@@ -107,6 +107,13 @@ site-builder --nginx-mode docker --mysql-mode docker --postgres-mode docker --we
 - `--state`: State/Province for SSL certificates (default: Bucharest)
 - `--organisation`: Organisation for SSL certificates (default: Perseus Reverse Proxy)
 
+Certificate renewal (forced or automatic) tests and gracefully reloads nginx in
+running site containers before reloading the front-facing nginx. Stopped or new
+containers load the certificates when started. `--skip-service-restart` skips
+these reloads, so changed certificates must then be loaded manually. This renews
+the internal proxy certificates; public certificates in `.cert/` are managed
+separately.
+
 #### Network Configuration
 - `--ip-prefix`: IP prefix for containers (default: 192.168.100)
 - `--ip-start`: Starting IP suffix for containers (default: 2)

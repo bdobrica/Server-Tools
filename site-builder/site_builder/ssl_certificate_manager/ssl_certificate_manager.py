@@ -206,8 +206,8 @@ class SSLCertificateManager:
         renew_csrs: bool = False,
         renew_crts: bool = False,
         auto_renew_days: int = 30,
-    ) -> None:
-        """Generate SSL certificates for a domain/subdomain pair."""
+    ) -> bool:
+        """Generate certificates and return whether the certificate or key changed."""
         proxy_ssl_folder = (self.proxy_ssl_path / domain) / subdomain
         if not proxy_ssl_folder.is_dir():
             proxy_ssl_folder.mkdir(parents=True, exist_ok=True)
@@ -285,3 +285,5 @@ class SSLCertificateManager:
                 # Write certificate
                 with proxy_ssl_crt.open("rb") as cert_file:
                     pem_file.write(cert_file.read())
+
+        return needs_cert_renewal

@@ -6,6 +6,7 @@ import coloredlogs
 
 from . import get_template_path
 from .config_generator import ConfigGenerator
+from .docker.site_reload import reload_site_containers
 from .core import (
     create_database_managers,
     create_nginx_manager,
@@ -289,8 +290,9 @@ def main():
         return
 
     # Generate SSL certificates for each site
+    renewed_sites = []
     for site in sites:
-        ssl_manager.generate_certificates(
+        changed = ssl_manager.generate_certificates(
             domain=site["domain"],
             subdomain=site["name"],
             renew_keys=args.renew_keys,
@@ -298,6 +300,8 @@ def main():
             renew_crts=args.renew_crts,
             auto_renew_days=args.auto_renew_days,
         )
+        if changed:
+            renewed_sites.append(site)
 
     # Generate site configurations
     for site in sites:
@@ -335,6 +339,11 @@ def main():
     for database_manager in database_managers.values():
         if database_manager and not database_manager.is_running():
             database_manager.start()
+
+    if not args.skip_service_restart:
+        reload_site_containers(renewed_sites)
+    elif renewed_sites:
+        logger.warning("Site certificates changed; container nginx reload skipped by --skip-service-restart")
 
     if not nginx_manager.is_running():
         nginx_manager.start()
