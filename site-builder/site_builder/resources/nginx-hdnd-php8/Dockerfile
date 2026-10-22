@@ -1,6 +1,6 @@
 FROM alpine:3.24
 
-ENV RUNTIME_VERSION=1.1.0
+ENV RUNTIME_VERSION=1.1.1
 
 # Refuse vulnerable packages if an Alpine mirror has not received the security update.
 # PHP 8.5.12 fixes CVE-2026-109618 and CVE-2026-109619.
@@ -48,7 +48,10 @@ RUN sed -e "s/^upload_max_filesize = .\+$/upload_max_filesize = 64M/g" \
     -e "s/^memory_limit = .\+$/memory_limit = 256M/g" \
     -e "s/^zlib\.output_compression = .\+$/zlib.output_compression = On/g" \
     -e "s/^;zlib\.output_handler =.*$/zlib.output_handler = On/g" \
-    -i /etc/php85/php.ini
+    -i /etc/php85/php.ini \
+    && sed -e "s/^user = nobody$/user = www-data/g" \
+    -e "s/^group = nobody$/group = www-data/g" \
+    -i /etc/php85/php-fpm.d/www.conf
 
 # Check the actual interpreter as well as the package constraints.
 RUN php85 -r 'exit(PHP_VERSION_ID >= 80512 && PHP_VERSION_ID < 80600 ? 0 : 1);'

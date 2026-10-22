@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.1.1] - 2026-10-22
+
+### Fixed
+- Run PHP-FPM workers as www-data:www-data to match application file ownership and the other runtime templates.
+
 ## [1.1.0] - 2026-10-22
 
 ### Changed
