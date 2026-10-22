@@ -70,16 +70,17 @@ class ContainerReloadTests(unittest.TestCase):
 
 class RenewalWorkflowTests(unittest.TestCase):
     def test_changed_sites_reload_before_proxy_and_skip_flag_is_respected(self):
-        for skip in (False, True):
-            with self.subTest(skip=skip), tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
+        for skip, rebuild in ((False, False), (True, False), (False, True)):
+            with self.subTest(skip=skip, rebuild=rebuild), tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
                 with patch.object(cli, "load_config", return_value={}), patch("sys.argv", ["site-builder"]):
                     args = cli.parse_arguments()
                 args.docker_compose_path = Path(directory) / "docker-compose.yml"
                 args.skip_service_restart = skip
+                args.rebuild_containers = rebuild
                 mocks = {}
                 for name in ("parse_arguments", "save_config", "validate_paths", "get_ca_password",
                              "create_ssl_manager", "ConfigGenerator", "create_nginx_manager",
-                             "create_database_managers", "discover_sites", "reload_site_containers"):
+                             "create_database_managers", "discover_sites", "reload_site_containers", "rebuild_site_containers"):
                     mocks[name] = stack.enter_context(patch.object(cli, name))
                 mocks["parse_arguments"].return_value = args
                 sites = [{"name": "example.com", "domain": "example.com", "slug": "example-com", "use_ssl": True},
@@ -90,11 +91,18 @@ class RenewalWorkflowTests(unittest.TestCase):
                 mocks["ConfigGenerator"].return_value.render_docker_compose.return_value = "services: {}"
                 events = []
                 mocks["reload_site_containers"].side_effect = lambda changed: events.append(("sites", changed))
+                mocks["rebuild_site_containers"].side_effect = lambda selected, path: events.append(("rebuild", selected))
                 proxy = mocks["create_nginx_manager"].return_value
                 proxy.is_running.return_value = True
                 proxy.reload.side_effect = lambda: events.append(("proxy", None))
                 cli.main()
-                self.assertEqual(events, [] if skip else [("sites", [sites[0]]), ("proxy", None)])
+                expected = [] if skip else [("rebuild", sites) if rebuild else ("sites", [sites[0]]), ("proxy", None)]
+                self.assertEqual(events, expected)
+                if rebuild:
+                    mocks["reload_site_containers"].assert_not_called()
+                    mocks["rebuild_site_containers"].assert_called_once_with(sites, args.docker_compose_path)
+                else:
+                    mocks["rebuild_site_containers"].assert_not_called()
 
 
 if __name__ == "__main__":

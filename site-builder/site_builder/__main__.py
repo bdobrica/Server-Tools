@@ -7,6 +7,7 @@ import coloredlogs
 from . import get_template_path
 from .config_generator import ConfigGenerator
 from .docker.site_reload import reload_site_containers
+from .docker.site_rebuild import rebuild_site_containers
 from .core import (
     create_database_managers,
     create_nginx_manager,
@@ -216,6 +217,12 @@ def parse_arguments():
         help="Skip restarting services after configuration",
     )
 
+    parser.add_argument(
+        "--rebuild-containers",
+        action="store_true",
+        help="Rebuild all discovered site images with fresh base images and no cache, then recreate site containers",
+    )
+
     # Output options
     parser.add_argument(
         "--verbose",
@@ -225,7 +232,10 @@ def parse_arguments():
         help="Enable verbose output",
     )
 
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.rebuild_containers and args.skip_service_restart:
+        parser.error("--rebuild-containers cannot be combined with --skip-service-restart")
+    return args
 
 
 def main():
@@ -340,7 +350,9 @@ def main():
         if database_manager and not database_manager.is_running():
             database_manager.start()
 
-    if not args.skip_service_restart:
+    if args.rebuild_containers:
+        rebuild_site_containers(sites, args.docker_compose_path)
+    elif not args.skip_service_restart:
         reload_site_containers(renewed_sites)
     elif renewed_sites:
         logger.warning("Site certificates changed; container nginx reload skipped by --skip-service-restart")

@@ -277,8 +277,23 @@ patched packages are unavailable. Python uses `python:3.13.17-alpine3.24` and
 Node.js uses `node:26.12.1-alpine3.24`. The existing `nginx-py312` and
 `nginx-njs24` directory/image names are retained for compatibility.
 
-Rebuild and recreate affected site services using the generated Compose file;
-changing the templates alone does not patch running containers:
+After installing the updated site-builder package, rebuild and recreate all
+discovered sites with your usual configuration options plus:
+
+```bash
+sudo site-builder --rebuild-containers
+```
+
+This regenerates configuration, builds all discovered site images with
+`--pull --no-cache`, and then recreates their containers with
+`--no-deps --force-recreate`. All builds must succeed before container replacement starts.
+Recreation causes brief site downtime; database and proxy containers are not
+recreated. The flag applies only to the current invocation and cannot be combined
+with `--skip-service-restart`. Recreated sites load renewed certificates at
+startup, so a separate certificate reload is skipped.
+
+Changing templates alone does not patch running containers. Alternatively,
+rebuild selected services using the generated Compose file:
 
 ```bash
 docker compose -f /etc/site-builder/docker/docker-compose.yml build --pull --no-cache <site-service>
