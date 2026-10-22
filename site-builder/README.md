@@ -288,8 +288,9 @@ This regenerates configuration, builds all discovered site images with
 `--pull --no-cache`, and then recreates their containers with
 `--no-deps --force-recreate`. All builds must succeed before container replacement starts.
 Recreation causes brief site downtime; database and proxy containers are not
-recreated. The flag applies only to the current invocation and cannot be combined
-with `--skip-service-restart`. Recreated sites load renewed certificates at
+recreated. The flag applies only to the current invocation. It rebuilds and
+recreates site containers even when `--skip-service-restart` is set or saved in
+your configuration; that setting still applies to other services. Recreated sites load renewed certificates at
 startup, so a separate certificate reload is skipped.
 
 Changing templates alone does not patch running containers. Alternatively,

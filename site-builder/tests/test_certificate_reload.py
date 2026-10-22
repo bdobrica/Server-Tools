@@ -70,7 +70,7 @@ class ContainerReloadTests(unittest.TestCase):
 
 class RenewalWorkflowTests(unittest.TestCase):
     def test_changed_sites_reload_before_proxy_and_skip_flag_is_respected(self):
-        for skip, rebuild in ((False, False), (True, False), (False, True)):
+        for skip, rebuild in ((False, False), (True, False), (False, True), (True, True)):
             with self.subTest(skip=skip, rebuild=rebuild), tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
                 with patch.object(cli, "load_config", return_value={}), patch("sys.argv", ["site-builder"]):
                     args = cli.parse_arguments()
@@ -96,7 +96,9 @@ class RenewalWorkflowTests(unittest.TestCase):
                 proxy.is_running.return_value = True
                 proxy.reload.side_effect = lambda: events.append(("proxy", None))
                 cli.main()
-                expected = [] if skip else [("rebuild", sites) if rebuild else ("sites", [sites[0]]), ("proxy", None)]
+                expected = [("rebuild", sites)] if rebuild else ([] if skip else [("sites", [sites[0]])])
+                if not skip:
+                    expected.append(("proxy", None))
                 self.assertEqual(events, expected)
                 if rebuild:
                     mocks["reload_site_containers"].assert_not_called()

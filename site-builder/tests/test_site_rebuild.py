@@ -39,7 +39,7 @@ class SiteRebuildTests(unittest.TestCase):
         run.assert_not_called()
 
     @patch.object(cli, "load_config", return_value={})
-    def test_cli_default_explicit_flag_and_conflicting_restart_option(self, load):
+    def test_cli_rebuild_preserves_saved_and_explicit_skip_restart(self, load):
         with patch("sys.argv", ["site-builder"]):
             self.assertFalse(cli.parse_arguments().rebuild_containers)
         with patch("sys.argv", ["site-builder", "--rebuild-containers"]):
@@ -49,6 +49,7 @@ class SiteRebuildTests(unittest.TestCase):
             ({"skip_service_restart": True}, ["site-builder", "--rebuild-containers"]),
         ):
             load.return_value = config
-            with patch("sys.argv", argv), patch("sys.stderr"), self.assertRaises(SystemExit) as error:
-                cli.parse_arguments()
-            self.assertEqual(error.exception.code, 2)
+            with patch("sys.argv", argv):
+                args = cli.parse_arguments()
+            self.assertTrue(args.rebuild_containers)
+            self.assertTrue(args.skip_service_restart)

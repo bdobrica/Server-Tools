@@ -233,8 +233,6 @@ def parse_arguments():
     )
 
     args = parser.parse_args()
-    if args.rebuild_containers and args.skip_service_restart:
-        parser.error("--rebuild-containers cannot be combined with --skip-service-restart")
     return args
 
 
