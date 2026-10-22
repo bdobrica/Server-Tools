@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-10-22
+
+### Changed
+- Upgrade to Node.js 26.12.1 on Alpine 3.24.
+- Fix apk package installation and create the www-data application user.
+
 ## [1.0.0] - 2025-10-15
 
 ### Added

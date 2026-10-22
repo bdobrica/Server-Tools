@@ -1,16 +1,17 @@
 # FastAPI + Nginx (SSL) single-container image
-FROM python:3.12-slim-trixie
+FROM python:3.13.17-alpine3.24
 
-ENV RUNTIME_VERSION=1.0.1
+ENV RUNTIME_VERSION=1.1.0
 
 # System deps
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apk add --no-cache \
     ca-certificates \
     curl \
     envsubst \
-    nginx \
-    python3-venv \
-    && rm -rf /var/lib/apt/lists/*
+    nginx
+
+# Alpine supplies the www-data group, but not the application user.
+RUN adduser -D -G www-data -h /var/www -s /bin/sh www-data
 
 # Nginx setup
 RUN mkdir -p /etc/nginx/templates /run/nginx /var/www

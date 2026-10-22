@@ -1,18 +1,20 @@
 # Node.js + Nginx (SSL) single-container image
-FROM node:25.2-alpine3.23
+FROM node:26.12.1-alpine3.24
 
-ENV RUNTIME_VERSION=1.0.1
+ENV RUNTIME_VERSION=1.1.0
 
 # System deps including nginx
-RUN apk update && apk add --no-install-recommends \
+RUN apk add --no-cache \
     ca-certificates \
     curl \
     envsubst \
-    nginx \
-    && rm -rf /var/cache/apk/*
+    nginx
 
 # Install TypeScript globally
 RUN npm install -g typescript ts-node
+
+# Alpine supplies the www-data group, but not the application user.
+RUN adduser -D -G www-data -h /var/www -s /bin/sh www-data
 
 # Nginx setup
 RUN mkdir -p /etc/nginx/templates /run/nginx /var/www

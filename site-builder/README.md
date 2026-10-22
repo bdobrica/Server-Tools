@@ -217,18 +217,18 @@ site_builder/
 └── resources/              # Docker images and templates
     ├── lighttpd-php8/      # Lightweight web server with PHP 8
     ├── nginx-hdnd-php8/    # Nginx + PHP 8 + HTML/CSS/JS container
-    ├── nginx-njs24/        # Nginx + Node.js 24 container
+    ├── nginx-njs24/        # Nginx + Node.js 26 container
     ├── nginx-php8/         # Nginx web server with PHP 8
-    └── nginx-py312/        # Nginx with Python 3.12
+    └── nginx-py312/        # Nginx with Python 3.13
 ```
 
 ### Docker Images
 The package includes pre-configured Docker images:
 - `lighttpd-php8`: Lightweight web server with PHP 8
 - `nginx-hdnd-php8`: Nginx + PHP 8 + HTML/CSS/JS container
-- `nginx-njs24`: Nginx + Node.js 24 container
+- `nginx-njs24`: Nginx + Node.js 26 container
 - `nginx-php8`: Nginx web server with PHP 8  
-- `nginx-py312`: Nginx with Python 3.12 support
+- `nginx-py312`: Nginx with Python 3.13 support
 
 These are automatically included as package resources and used in generated Docker Compose configurations.
 
@@ -268,6 +268,31 @@ python test_postgres_mock.py
    - Fixed undefined `args.database_mode` reference in main function
    - Corrected hardcoded configuration paths in factory functions
    - Improved path resolution for Docker mode configurations
+
+### Runtime security update (2026-10-22)
+
+The bundled PHP templates use Alpine 3.24 and PHP 8.5 packages with a minimum
+version of 8.5.12, fixing CVE-2026-109618 and CVE-2026-109619. Builds fail if
+patched packages are unavailable. Python uses `python:3.13.17-alpine3.24` and
+Node.js uses `node:26.12.1-alpine3.24`. The existing `nginx-py312` and
+`nginx-njs24` directory/image names are retained for compatibility.
+
+Rebuild and recreate affected site services using the generated Compose file;
+changing the templates alone does not patch running containers:
+
+```bash
+docker compose -f /etc/site-builder/docker/docker-compose.yml build --pull --no-cache <site-service>
+docker compose -f /etc/site-builder/docker/docker-compose.yml up -d --force-recreate <site-service>
+```
+
+Repeat for each affected site service. Sites with a custom `.runtime` build
+context need the same updates in their own templates. When migrating Python
+sites from Debian/Python 3.12, recreate their persistent `/var/www/.venv` under
+the new image and reinstall dependencies; existing native extensions may be
+incompatible with Python 3.13 or Alpine's musl libc. Dependencies without musl
+wheels may require additional Alpine build packages. Reinstall Node dependencies
+containing native addons for Node.js 26 as well.
+
 
 ## License
 
