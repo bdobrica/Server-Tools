@@ -313,3 +313,18 @@ containing native addons for Node.js 26 as well.
 ## License
 
 [Apache 2.0 License](../LICENSE)
+
+### Custom database data directories
+
+Use `--mysql-datadir /mnt/data/mysql` and `--postgres-datadir /mnt/data/postgresql`
+to override database storage locations. These options are saved as `mysql_datadir`
+and `postgres_datadir` in the `[database]` section of `config.ini`. CLI values
+take precedence over saved settings. Omit the settings (or leave them blank in
+the config) to keep the existing defaults: `/var/lib/mysql` for native MySQL,
+the installed cluster's default for native PostgreSQL, and `<database-config-path>/data`
+for Docker storage. In Docker mode these are host bind mount paths; container
+paths remain unchanged (including PostgreSQL's `pgdata` subdirectory).
+
+Existing database files are not moved or initialized by these options. For native
+installations, prepare the data directory and its database service permissions
+before restarting with the new configuration.

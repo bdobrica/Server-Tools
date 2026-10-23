@@ -107,11 +107,13 @@ def load_config(config_path: Path) -> Dict[str, Any]:
             {
                 "mysql_mode": section.get("mysql_mode", "native"),
                 "mysql_config_path": Path(section.get("mysql_config_path", "/etc/mysql")),
+                "mysql_datadir": Path(section["mysql_datadir"]) if section.get("mysql_datadir", "").strip() else None,
                 "mysql_root_password": section.get("mysql_root_password"),
                 "postgres_mode": section.get("postgres_mode", "native"),
                 "postgres_config_path": (
                     Path(postgres_path) if (postgres_path := section.get("postgres_config_path")) else None
                 ),
+                "postgres_datadir": Path(section["postgres_datadir"]) if section.get("postgres_datadir", "").strip() else None,
                 "postgres_root_password": section.get("postgres_root_password"),
                 "database_root_password": section.get("database_root_password"),
             }
@@ -186,11 +188,15 @@ def save_config(config_path: Path, args: argparse.Namespace) -> None:
     config.add_section("database")
     config["database"]["mysql_mode"] = args.mysql_mode
     config["database"]["mysql_config_path"] = str(args.mysql_config_path)
+    if getattr(args, "mysql_datadir", None):
+        config["database"]["mysql_datadir"] = str(args.mysql_datadir)
     if args.mysql_root_password:
         config["database"]["mysql_root_password"] = args.mysql_root_password
     config["database"]["postgres_mode"] = args.postgres_mode
     if args.postgres_config_path:
         config["database"]["postgres_config_path"] = str(args.postgres_config_path)
+    if getattr(args, "postgres_datadir", None):
+        config["database"]["postgres_datadir"] = str(args.postgres_datadir)
     if args.postgres_root_password:
         config["database"]["postgres_root_password"] = args.postgres_root_password
     if args.database_root_password:

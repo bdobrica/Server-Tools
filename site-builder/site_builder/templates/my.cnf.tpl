@@ -10,7 +10,7 @@ pid-file = /var/run/mysqld/mysqld.pid
 
 {% if DB_MODE == "native" -%}
 basedir = /usr
-datadir = /var/lib/mysql
+datadir = "{{ MYSQL_DATADIR | default('/var/lib/mysql', true) | replace('\\', '\\\\') | replace('"', '\\"') }}"
 tmpdir = /tmp
 lc-messages-dir = /usr/share/mysql
 {% endif -%}

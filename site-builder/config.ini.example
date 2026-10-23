@@ -37,8 +37,10 @@ nginx_mode = native
 [database]
 mysql_mode = native
 mysql_config_path = /etc/mysql
+# mysql_datadir = /mnt/data/mysql
 # mysql_root_password = (saved only if explicitly provided)
 postgres_mode = native
+# postgres_datadir = /mnt/data/postgresql
 # postgres_config_path = (saved only if explicitly provided)
 # postgres_root_password = (saved only if explicitly provided)
 # database_root_password = (saved only if explicitly provided)

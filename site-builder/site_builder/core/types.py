@@ -1,7 +1,7 @@
 """Type definitions for site-builder."""
 
 from pathlib import Path
-from typing import Protocol
+from typing import Optional, Protocol
 
 
 class SiteBuilderArgs(Protocol):
@@ -20,6 +20,8 @@ class SiteBuilderArgs(Protocol):
     nginx_enabled_path: Path
     docker_compose_path: Path
     template_path: Path
+    mysql_datadir: Optional[Path]
+    postgres_datadir: Optional[Path]
     mysql_config_path: Path
     postgres_config_path: Path
     

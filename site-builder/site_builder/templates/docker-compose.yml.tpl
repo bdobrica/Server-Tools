@@ -45,7 +45,7 @@ services:
               target: "/etc/mysql/my.cnf"
               read_only: true
             - type: bind
-              source: "{{ MYSQL_CONFIG_PATH }}/data"
+              source: "{{ MYSQL_DATADIR | default(MYSQL_CONFIG_PATH ~ "/data", true) }}"
               target: "/var/lib/mysql"
             - type: bind
               source: "{{ MYSQL_CONFIG_PATH }}/logs"
@@ -74,7 +74,7 @@ services:
               target: "/etc/postgresql/postgresql.conf"
               read_only: true
             - type: bind
-              source: "{{ POSTGRES_CONFIG_PATH }}/data"
+              source: "{{ POSTGRES_DATADIR | default(POSTGRES_CONFIG_PATH ~ "/data", true) }}"
               target: "/var/lib/postgresql/data"
             - type: bind
               source: "{{ POSTGRES_CONFIG_PATH }}/logs"

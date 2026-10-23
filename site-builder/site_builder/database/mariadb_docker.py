@@ -43,7 +43,7 @@ class MariaDBDockerManager(DatabaseManager):
         self.docker_compose_path = docker_compose_path
         self.root_password = root_password or self._generate_password()
         self.config_file = config_path / "my.cnf"
-        self.data_path = config_path / "data"
+        self.data_path = Path(template_vars.get("MYSQL_DATADIR") or config_path / "data")
         self.logs_path = config_path / "logs"
 
         # Use provided docker_manager or create/reuse shared instance

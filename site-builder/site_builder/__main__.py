@@ -178,6 +178,12 @@ def parse_arguments():
         help="MySQL configuration path (default: /etc/mysql)",
     )
     parser.add_argument(
+        "--mysql-datadir",
+        type=Path,
+        default=saved_config.get("mysql_datadir"),
+        help="MySQL data directory (Docker host storage path; default: database default)",
+    )
+    parser.add_argument(
         "--mysql-root-password",
         type=str,
         default=saved_config.get("mysql_root_password"),
@@ -195,6 +201,12 @@ def parse_arguments():
         type=Path,
         default=saved_config.get("postgres_config_path"),
         help="PostgreSQL configuration path (auto-detected if not provided, typically /etc/postgresql/<version>/main/)",
+    )
+    parser.add_argument(
+        "--postgres-datadir",
+        type=Path,
+        default=saved_config.get("postgres_datadir"),
+        help="PostgreSQL data directory (Docker host storage path; default: database default)",
     )
     parser.add_argument(
         "--postgres-root-password",
@@ -264,9 +276,11 @@ def main():
         "NGINX_SITES_ENABLED_PATH": (args.docker_compose_path.parent / "nginx" / "sites-enabled" if args.nginx_mode == "docker" else args.nginx_enabled_path).resolve().as_posix(),
         "MYSQL_CONFIG_PATH": (args.docker_compose_path.parent / "mysql" if args.mysql_mode == "docker" else args.site_builder_config_path / "mysql").resolve().as_posix(),
         "POSTGRES_CONFIG_PATH": (args.docker_compose_path.parent / "postgres" if args.postgres_mode == "docker" else args.site_builder_config_path / "postgres").resolve().as_posix(),
+        "MYSQL_DATADIR": args.mysql_datadir.resolve().as_posix() if args.mysql_datadir else None,
         "MYSQL_MODE": args.mysql_mode,
         "MYSQL_ROOT_PASSWORD": args.mysql_root_password or "generated_password_placeholder",
         "ENABLE_MYSQL_DATABASE": True if args.mysql_mode == "docker" else False,
+        "POSTGRES_DATADIR": args.postgres_datadir.resolve().as_posix() if args.postgres_datadir else None,
         "POSTGRES_MODE": args.postgres_mode,
         "POSTGRES_ROOT_PASSWORD": args.postgres_root_password or "generated_password_placeholder",
         "ENABLE_POSTGRES_DATABASE": True if args.postgres_mode == "docker" else False,
